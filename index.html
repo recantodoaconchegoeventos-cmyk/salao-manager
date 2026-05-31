@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salão Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f5f0;--sidebar:#18182a;--sidebar-hover:#26263d;
+  --card:#ffffff;--border:#e8e0d4;--border2:#d4c9b8;
+  --accent:#c8873a;--accent-d:#a86e2a;--accent-light:#fdf4e8;
+  --text:#1e1810;--text2:#6b5d4a;--text3:#a8967e;
+  --success:#277a46;--success-bg:#eaf6f0;--success-border:#b8dfc9;
+  --info:#1a5faa;--info-bg:#e8f1fb;--info-border:#b0cef0;
+  --danger:#b83030;--danger-bg:#fceaea;--danger-border:#f0b8b8;
+  --warn:#8a6010;--warn-bg:#fef8e8;--warn-border:#f0d898;
+  --r:8px;--r-lg:12px;
+  --font:'Nunito',sans-serif;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px}
+#app{display:flex;height:100vh;overflow:hidden}
+
+/* ── LOADING ── */
+#boot{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:999}
+#boot .sp{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── LOGIN ── */
+#login-wrap{display:none;align-items:center;justify-content:center;width:100%;background:var(--bg)}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:40px 36px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.login-brand{display:flex;align-items:center;gap:12px;margin-bottom:32px;justify-content:center}
+.login-brand-icon{width:48px;height:48px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px}
+.login-brand-text{font-size:20px;font-weight:700;color:var(--text)}
+.login-brand-text small{display:block;font-size:12px;font-weight:400;color:var(--text3)}
+.lf{margin-bottom:16px}
+.lf label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.lf input{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:14px;font-family:var(--font);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+.lf input:focus{border-color:var(--accent);background:#fff}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:40px}
+.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px}
+.login-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--r);padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);transition:background .15s;margin-top:4px}
+.login-btn:hover{background:var(--accent-d)}
+.login-err{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--r);padding:9px 12px;font-size:12px;color:var(--danger);margin-bottom:14px;display:none}
+.login-note{text-align:center;font-size:11px;color:var(--text3);margin-top:18px}
+
+/* ── SIDEBAR ── */
+#sidebar{width:224px;min-width:224px;background:var(--sidebar);display:flex;flex-direction:column;transition:width .2s;position:relative}
+#sidebar.col{width:58px;min-width:58px}
+.sb-logo{padding:18px 14px 14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px;overflow:hidden}
+.sb-logo-ic{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0}
+.sb-logo-tx{font-size:13px;font-weight:700;color:#eae6dd;white-space:nowrap;line-height:1.3}
+.sb-logo-tx small{display:block;font-size:10px;font-weight:400;color:#808098;margin-top:1px}
+.sb-nav{padding:10px 7px;flex:1;overflow-y:auto;overflow-x:hidden}
+.sb-grp{font-size:10px;font-weight:700;letter-spacing:.08em;color:#5a5a7a;text-transform:uppercase;padding:10px 8px 3px;white-space:nowrap}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:var(--r);cursor:pointer;color:#8888a8;transition:all .15s;white-space:nowrap;margin-bottom:1px;font-size:13px;font-weight:500}
+.sb-item:hover{background:var(--sidebar-hover);color:#eae6dd}
+.sb-item.act{background:rgba(200,135,58,.16);color:var(--accent)}
+.sb-item i{font-size:17px;flex-shrink:0;width:19px;text-align:center}
+.sb-foot{padding:10px 7px;border-top:1px solid rgba(255,255,255,.06)}
+.sb-user{display:flex;align-items:center;gap:8px;padding:8px;border-radius:var(--r);overflow:hidden}
+.sb-av{width:30px;height:30px;border-radius:50%;background:rgba(200,135,58,.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0}
+.sb-uinfo{overflow:hidden}
+.sb-uinfo b{display:block;font-size:12px;color:#eae6dd;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-uinfo span{font-size:10px;color:#5a5a7a}
+.sb-logout{background:none;border:none;color:#5a5a7a;cursor:pointer;padding:6px 9px;border-radius:var(--r);font-size:12px;display:flex;align-items:center;gap:5px;width:100%;margin-top:2px;font-family:var(--font);font-weight:500;transition:all .15s}
+.sb-logout:hover{color:#eae6dd;background:var(--sidebar-hover)}
+.sb-toggle{width:100%;background:none;border:none;border-top:1px solid rgba(255,255,255,.05);padding:9px 0;cursor:pointer;color:#5a5a7a;font-size:15px;display:flex;align-items:center;justify-content:center;transition:color .15s}
+.sb-toggle:hover{color:#eae6dd}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#topbar h2{font-size:16px;font-weight:700}
+#topbar-acts{display:flex;gap:8px;align-items:center}
+#content{flex:1;overflow-y:auto;padding:20px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r);border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;font-family:var(--font)}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-d)}
+.btn-secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--bg)}
+.btn-success{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-ic{padding:6px;border-radius:var(--r);background:transparent;border:1px solid var(--border);cursor:pointer;color:var(--text2);display:inline-flex;align-items:center;font-size:15px;transition:all .15s}
+.btn-ic:hover{background:var(--bg);color:var(--text)}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card+.card{margin-top:16px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.ct{font-size:14px;font-weight:700}
+
+/* ── FORMS ── */
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.fi{display:flex;flex-direction:column;gap:4px}
+.fi label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.fi input,.fi select,.fi textarea{border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:13px;font-family:var(--font);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+.fi input:focus,.fi select:focus,.fi textarea:focus{border-color:var(--accent);background:#fff}
+.fi textarea{resize:vertical;min-height:72px}
+.ff{grid-column:1/-1}
+.sdiv{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);border-bottom:1px solid var(--border);padding-bottom:5px;margin:12px 0 8px;grid-column:1/-1}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 11px;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:9px 11px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#faf7f3}
+
+/* ── BADGES ── */
+.b{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.b-green{background:var(--success-bg);color:var(--success)}
+.b-blue{background:var(--info-bg);color:var(--info)}
+.b-amber{background:var(--warn-bg);color:var(--warn)}
+.b-red{background:var(--danger-bg);color:var(--danger)}
+.b-gray{background:#f0ece6;color:#6b5d4a}
+
+/* ── STATS ── */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px}
+.sc-l{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.sc-v{font-size:22px;font-weight:700}
+.sc.acc{border-left:3px solid var(--accent)}
+.sc.grn{border-left:3px solid var(--success)}
+.sc.blu{border-left:3px solid var(--info)}
+.sc.red{border-left:3px solid var(--danger)}
+
+/* ── MODAL ── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:500;align-items:center;justify-content:center;padding:16px}
+.modal-ov.open{display:flex}
+.modal-box{background:var(--card);border-radius:var(--r-lg);width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.14)}
+.modal-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-hd h3{font-size:15px;font-weight:700}
+.modal-bd{padding:20px;overflow-y:auto;flex:1}
+.modal-ft{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+
+/* ── CALENDAR ── */
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cdl{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:5px 0;text-transform:uppercase;letter-spacing:.05em}
+.cd{min-height:82px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:5px;cursor:pointer;transition:border-color .15s}
+.cd:hover{border-color:var(--accent)}
+.cd.om{background:#f5f2ed;opacity:.55}
+.cd.td{border:2px solid var(--accent)}
+.cdn{font-size:12px;font-weight:600;color:var(--text3);margin-bottom:3px}
+.cd.td .cdn{color:var(--accent);font-weight:700}
+.ce{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.ce.reserva{background:#bfdbf7;color:#1a4a7a}
+.ce.confirmado{background:#bbf0d0;color:#155230}
+
+/* ── FIN TABS ── */
+.ftabs{display:flex;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;width:fit-content;margin-bottom:14px}
+.ftab{padding:7px 16px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);background:var(--card);border:none;font-family:var(--font);transition:all .15s}
+.ftab.act{background:var(--accent);color:#fff}
+.ftab:not(:last-child){border-right:1px solid var(--border)}
+
+/* ── TOGGLE ── */
+.ctog{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:var(--bg);transition:all .15s}
+.ctog:hover,.ctog.on{border-color:var(--accent);background:var(--accent-light)}
+.ctog input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+
+/* ── INFO BOX ── */
+.ibox{background:var(--info-bg);border:1px solid var(--info-border);border-radius:var(--r);padding:9px 12px;font-size:12px;color:var(--info);grid-column:1/-1}
+.wbox{background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:var(--r);padding:9px 12px;font-size:12px;color:var(--warn);grid-column:1/-1}
+
+/* ── SEARCH ── */
+.sw{position:relative}
+.sw input{padding-left:30px}
+.sw i{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none}
+
+/* ── BAR CHART ── */
+.br{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.bl{font-size:11px;color:var(--text2);width:80px;text-align:right;flex-shrink:0}
+.bt{flex:1;height:12px;background:#ede8e0;border-radius:8px;overflow:hidden}
+.bf{height:100%;border-radius:8px;transition:width .5s}
+.bv{font-size:11px;font-weight:600;width:68px;flex-shrink:0}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;background:#1e1810;color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
+#toast.show{opacity:1}
+
+/* ── SYNC INDICATOR ── */
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px}
+.sync-dot.ok{background:var(--success)}
+.sync-dot.err{background:var(--danger)}
+.sync-dot.loading{background:var(--accent);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+@media(max-width:680px){
+  #sidebar{width:52px;min-width:52px}
+  #sidebar .sb-logo-tx,#sidebar .sb-item span,#sidebar .sb-grp,#sidebar .sb-uinfo,#sidebar .sb-logout span{display:none}
+  .cd{min-height:44px}.ce{display:none}
+  .fg{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- BOOT SCREEN -->
+<div id="boot">
+  <div class="sp"></div>
+  <span style="font-size:13px;color:var(--text2)">Carregando sistema...</span>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+  <!-- LOGIN -->
+  <div id="login-wrap">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="login-brand-icon"><i class="ti ti-confetti"></i></div>
+        <div class="login-brand-text">Salão Manager<small>Sistema de gestão de eventos</small></div>
+      </div>
+      <div class="login-err" id="lerr"></div>
+      <div class="lf"><label>Usuário</label><input id="lu" placeholder="seu usuário" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="lf"><label>Senha</label>
+        <div class="pw-wrap">
+          <input type="password" id="lp" placeholder="sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%">
+          <button class="pw-eye" onclick="togglePwd()" type="button"><i class="ti ti-eye" id="peye"></i></button>
+        </div>
+      </div>
+      <button class="login-btn" id="lbtn" onclick="doLogin()">Entrar</button>
+      <p class="login-note"><span class="sync-dot ok" id="conn-dot"></span>Dados sincronizados em tempo real</p>
+    </div>
+  </div>
+
+  <!-- SHELL (sidebar + main) -->
+  <div id="shell" style="display:none;width:100%">
+    <div id="sidebar">
+      <div class="sb-logo">
+        <div class="sb-logo-ic"><i class="ti ti-confetti"></i></div>
+        <div class="sb-logo-tx">Salão Manager<small>Gestão completa</small></div>
+      </div>
+      <nav class="sb-nav" id="nav"></nav>
+      <div class="sb-foot">
+        <div class="sb-user">
+          <div class="sb-av" id="sb-av">AD</div>
+          <div class="sb-uinfo"><b id="sb-nome">Admin</b><span id="sb-role">Administrador</span></div>
+        </div>
+        <button class="sb-logout" onclick="doLogout()"><i class="ti ti-logout" style="font-size:14px"></i><span>Sair</span></button>
+      </div>
+      <button class="sb-toggle" id="sbtgl" onclick="toggleSB()"><i class="ti ti-chevrons-left" id="sbic"></i></button>
+    </div>
+    <div id="main">
+      <div id="topbar">
+        <h2 id="pg-title">Dashboard</h2>
+        <div id="topbar-acts">
+          <span style="font-size:11px;color:var(--text3)"><span class="sync-dot ok" id="sync-dot"></span><span id="sync-txt">Sincronizado</span></span>
+        </div>
+      </div>
+      <div id="content"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-ov" id="modal">
+  <div class="modal-box">
+    <div class="modal-hd"><h3 id="modal-title">Modal</h3><button class="btn-ic" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div class="modal-bd" id="modal-body"></div>
+    <div class="modal-ft" id="modal-foot"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FIREBASE SDK
+═══════════════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  ⚠️  SUBSTITUA PELOS SEUS DADOS DO FIREBASE  ⚠️          ║
+// ╚══════════════════════════════════════════════════════════╝
+ const firebaseConfig = {
+    apiKey: "AIzaSyARy1VerzcXdUJCBzHQA8DrJmK6vdqF5Io",
+    authDomain: "recanto-do-aconchego-eventos.firebaseapp.com",
+    projectId: "recanto-do-aconchego-eventos",
+    storageBucket: "recanto-do-aconchego-eventos.firebasestorage.app",
+    messagingSenderId: "567805314565",
+    appId: "1:567805314565:web:1a06a2ec659751d7e1be6c",
+    measurementId: "G-032GT4SD1K"
+  };
+
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
+
+// ──────────────────────────────────────────────────────────
+// ESTADO GLOBAL
+// ──────────────────────────────────────────────────────────
+window.ST = {
+  user: null, page: 'dashboard', finTab: 'receber',
+  calDate: new Date(),
+  users:[], clientes:[], fornecs:[], contratos:[], eventos:[], financ:[],
+  locador: {}
+};
+
+// helpers de acesso ao Firestore
+window.DB = {
+  async getAll(col){ const s=await getDocs(collection(db,col)); return s.docs.map(d=>({id:d.id,...d.data()})); },
+  async getDoc(col,id){ const d=await getDoc(doc(db,col,id)); return d.exists()?{id:d.id,...d.data()}:null; },
+  async set(col,id,data){ await setDoc(doc(db,col,id),data); },
+  async add(col,data){ const r=await addDoc(collection(db,col),data); return r.id; },
+  async upd(col,id,data){ await updateDoc(doc(db,col,id),data); },
+  async del(col,id){ await deleteDoc(doc(db,col,id)); },
+  listen(col,cb){ return onSnapshot(collection(db,col),snap=>{ cb(snap.docs.map(d=>({id:d.id,...d.data()}))); }); }
+};
+
+// ──────────────────────────────────────────────────────────
+// BOOT: carrega dados, configura listeners de tempo real
+// ──────────────────────────────────────────────────────────
+async function boot(){
+  setSyncStatus('loading','Conectando...');
+  try {
+    // Dados estáticos (locador)
+    const locDoc = await DB.getDoc('config','locador');
+    ST.locador = locDoc || defaultLocador();
+
+    // Carrega coleções iniciais em paralelo
+    const [users,clientes,fornecs,contratos,eventos,financ] = await Promise.all([
+      DB.getAll('users'), DB.getAll('clientes'), DB.getAll('fornecs'),
+      DB.getAll('contratos'), DB.getAll('eventos'), DB.getAll('financ')
+    ]);
+
+    ST.users    = users;
+    ST.clientes = clientes;
+    ST.fornecs  = fornecs;
+    ST.contratos= contratos;
+    ST.eventos  = eventos;
+    ST.financ   = financ;
+
+    // Usuários padrão se banco vazio
+    if(!ST.users.length){
+      await DB.set('users','admin1',{username:'admin1',password:'admin123',nome:'Administrador 1',role:'admin'});
+      await DB.set('users','admin2',{username:'admin2',password:'admin123',nome:'Administrador 2',role:'admin'});
+      ST.users = await DB.getAll('users');
+    }
+
+    // Listeners em tempo real para sincronização
+    DB.listen('clientes',  d=>{ST.clientes=d;  if(ST.page==='clientes')    renderPage();});
+    DB.listen('fornecs',   d=>{ST.fornecs=d;   if(ST.page==='fornecedores')renderPage();});
+    DB.listen('contratos', d=>{ST.contratos=d; if(ST.page==='contratos')   renderPage();});
+    DB.listen('eventos',   d=>{ST.eventos=d;   if(ST.page==='agenda')      renderPage();});
+    DB.listen('financ',    d=>{ST.financ=d;    if(ST.page==='financeiro')  renderPage();});
+    DB.listen('users',     d=>{ST.users=d;     if(ST.page==='usuarios')    renderPage();});
+
+    setSyncStatus('ok','Sincronizado');
+    document.getElementById('boot').style.display='none';
+    document.getElementById('app').style.display='flex';
+    document.getElementById('login-wrap').style.display='flex';
+
+  } catch(e){
+    console.error(e);
+    setSyncStatus('err','Erro de conexão');
+    document.getElementById('boot').innerHTML=`
+      <div style="text-align:center;padding:24px;max-width:420px">
+        <div style="font-size:14px;font-weight:700;color:#b83030;margin-bottom:8px">Erro ao conectar ao Firebase</div>
+        <div style="font-size:13px;color:#6b5d4a;line-height:1.6">Verifique se você preencheu corretamente as credenciais do Firebase no arquivo <code>index.html</code>. Consulte o <b>README.md</b> para instruções detalhadas.</div>
+      </div>`;
+  }
+}
+
+function setSyncStatus(state,txt){
+  const dot=document.getElementById('sync-dot');
+  const cdot=document.getElementById('conn-dot');
+  const stxt=document.getElementById('sync-txt');
+  if(dot){dot.className='sync-dot '+state;}
+  if(cdot){cdot.className='sync-dot '+state;}
+  if(stxt){stxt.textContent=txt;}
+}
+
+// ──────────────────────────────────────────────────────────
+// AUTH
+// ──────────────────────────────────────────────────────────
+window.togglePwd=function(){
+  const i=document.getElementById('lp'),ic=document.getElementById('peye');
+  i.type=i.type==='password'?'text':'password';
+  ic.className=i.type==='password'?'ti ti-eye':'ti ti-eye-off';
+};
+
+window.doLogin=async function(){
+  const u=(document.getElementById('lu').value||'').trim().toLowerCase();
+  const p=(document.getElementById('lp').value||'').trim();
+  const err=document.getElementById('lerr');
+  const btn=document.getElementById('lbtn');
+  err.style.display='none';
+  if(!u||!p){err.textContent='Preencha usuário e senha.';err.style.display='block';return;}
+  btn.textContent='Verificando...';btn.disabled=true;
+  await new Promise(r=>setTimeout(r,300));
+  const found=ST.users.find(x=>x.username.toLowerCase()===u&&x.password===p);
+  btn.textContent='Entrar';btn.disabled=false;
+  if(!found){err.textContent='Usuário ou senha incorretos.';err.style.display='block';return;}
+  ST.user=found;
+  document.getElementById('login-wrap').style.display='none';
+  document.getElementById('shell').style.display='flex';
+  document.getElementById('shell').style.width='100%';
+  const ini=found.nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('sb-av').textContent=ini;
+  document.getElementById('sb-nome').textContent=found.nome;
+  document.getElementById('sb-role').textContent=found.role==='admin'?'Administrador':'Operador';
+  navigate('dashboard');
+};
+
+window.doLogout=function(){
+  ST.user=null; ST.page='dashboard';
+  document.getElementById('shell').style.display='none';
+  document.getElementById('login-wrap').style.display='flex';
+  document.getElementById('lu').value='';
+  document.getElementById('lp').value='';
+};
+
+// ──────────────────────────────────────────────────────────
+// NAVIGATION
+// ──────────────────────────────────────────────────────────
+const NAV_ITEMS=[
+  {p:'dashboard',  ic:'ti-layout-dashboard', lbl:'Dashboard',    grp:'Principal'},
+  {p:'clientes',   ic:'ti-users',            lbl:'Clientes',     grp:'Cadastros'},
+  {p:'fornecedores',ic:'ti-truck',           lbl:'Fornecedores', grp:'Cadastros'},
+  {p:'contratos',  ic:'ti-file-text',        lbl:'Contratos',    grp:'Cadastros'},
+  {p:'agenda',     ic:'ti-calendar-event',   lbl:'Agenda',       grp:'Operacional'},
+  {p:'financeiro', ic:'ti-currency-dollar',  lbl:'Financeiro',   grp:'Financeiro'},
+  {p:'usuarios',   ic:'ti-shield-lock',      lbl:'Usuários',     grp:'Sistema'},
+  {p:'configuracoes',ic:'ti-settings',       lbl:'Configurações',grp:'Sistema'},
+];
+
+window.navigate=function(page){
+  ST.page=page;
+  let html='',lastGrp='';
+  NAV_ITEMS.forEach(it=>{
+    if(it.grp!==lastGrp){html+=`<div class="sb-grp">${it.grp}</div>`;lastGrp=it.grp;}
+    html+=`<div class="sb-item${page===it.p?' act':''}" onclick="navigate('${it.p}')"><i class="ti ${it.ic}"></i><span>${it.lbl}</span></div>`;
+  });
+  document.getElementById('nav').innerHTML=html;
+  const titles={dashboard:'Dashboard',clientes:'Clientes',fornecedores:'Fornecedores',contratos:'Contratos',agenda:'Agenda de Eventos',financeiro:'Financeiro',usuarios:'Gerenciar Usuários',configuracoes:'Configurações'};
+  document.getElementById('pg-title').textContent=titles[page]||page;
+  const acts=document.getElementById('topbar-acts');
+  const syncHtml=`<span style="font-size:11px;color:var(--text3)"><span class="sync-dot ok" id="sync-dot"></span><span id="sync-txt">Sincronizado</span></span>`;
+  const btns={
+    clientes:`<button class="btn btn-primary" onclick="openModal('cliente')"><i class="ti ti-plus"></i> Novo Cliente</button>`,
+    fornecedores:`<button class="btn btn-primary" onclick="openModal('fornecedor')"><i class="ti ti-plus"></i> Novo Fornecedor</button>`,
+    contratos:`<button class="btn btn-primary" onclick="openModal('contrato')"><i class="ti ti-plus"></i> Novo Contrato</button>`,
+    financeiro:`<button class="btn btn-primary" onclick="openModal('lancamento')"><i class="ti ti-plus"></i> Lançamento</button>`,
+    configuracoes:`<button class="btn btn-primary" onclick="saveLocador()"><i class="ti ti-device-floppy"></i> Salvar</button>`,
+  };
+  acts.innerHTML=(btns[page]||'')+' '+syncHtml;
+  renderPage();
+};
+
+window.toggleSB=function(){
+  const s=document.getElementById('sidebar'),ic=document.getElementById('sbic');
+  s.classList.toggle('col');
+  ic.className=s.classList.contains('col')?'ti ti-chevrons-right':'ti ti-chevrons-left';
+};
+
+function renderPage(){
+  const pages={dashboard:pgDashboard,clientes:pgClientes,fornecedores:pgFornecedores,contratos:pgContratos,agenda:pgAgenda,financeiro:pgFinanceiro,usuarios:pgUsuarios,configuracoes:pgConfiguracoes};
+  const fn=pages[ST.page];
+  if(fn)document.getElementById('content').innerHTML=fn();
+}
+
+// ──────────────────────────────────────────────────────────
+// PAGE: DASHBOARD
+// ──────────────────────────────────────────────────────────
+function pgDashboard(){
+  const rec=ST.financ.filter(f=>f.tipo==='receber');
+  const pag=ST.financ.filter(f=>f.tipo==='pagar');
+  const tR=rec.filter(f=>f.status==='pago').reduce((s,f)=>s+f.valor,0);
+  const pR=rec.filter(f=>f.status==='pendente').reduce((s,f)=>s+f.valor,0);
+  const tP=pag.filter(f=>f.status==='pago').reduce((s,f)=>s+f.valor,0);
+  const pP=pag.filter(f=>f.status==='pendente').reduce((s,f)=>s+f.valor,0);
+  const mx=Math.max(tR,pR,tP,pP,1);
+  const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const prox=ST.contratos.slice().sort((a,b)=>a.data_evento>b.data_evento?1:-1).slice(0,5);
+  return `
+  <div class="sg">
+    <div class="sc acc"><div class="sc-l">Eventos</div><div class="sc-v">${ST.eventos.length}</div></div>
+    <div class="sc grn"><div class="sc-l">Confirmados</div><div class="sc-v">${ST.eventos.filter(e=>e.status==='confirmado').length}</div></div>
+    <div class="sc blu"><div class="sc-l">Clientes</div><div class="sc-v">${ST.clientes.length}</div></div>
+    <div class="sc"><div class="sc-l">Contratos</div><div class="sc-v">${ST.contratos.length}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+    <div class="card">
+      <div class="ch"><span class="ct">Financeiro resumido</span></div>
+      ${[['Recebido','#277a46',tR],['A Receber','#1a5faa',pR],['Saídas pagas','#c8873a',tP],['A Pagar','#b83030',pP]].map(([l,c,v])=>`
+      <div class="br"><div class="bl">${l}</div><div class="bt"><div class="bf" style="width:${Math.round(v/mx*100)}%;background:${c}"></div></div><div class="bv">R$ ${v.toLocaleString('pt-BR')}</div></div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">Próximos eventos</span></div>
+      ${prox.length?prox.map(c=>{
+        const cl=ST.clientes.find(x=>x.id===c.id_cliente||x.id===c.cliente_id);
+        const p=(c.data_evento||'').split('-');
+        return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+          <div style="text-align:center;background:var(--accent-light);border-radius:6px;padding:3px 8px;min-width:42px">
+            <div style="font-size:16px;font-weight:700;color:var(--accent);line-height:1">${p[2]||'--'}</div>
+            <div style="font-size:10px;color:var(--text2)">${meses[parseInt(p[1]||1)-1]||''}</div>
+          </div>
+          <div><div style="font-size:13px;font-weight:600">${cl?cl.nome:'—'}</div><div style="font-size:11px;color:var(--text2)">${c.finalidade||'—'}</div></div>
+          <div style="margin-left:auto"><span class="b ${c.status==='confirmado'?'b-green':'b-blue'}">${c.status||'—'}</span></div>
+        </div>`;
+      }).join(''):'<div style="text-align:center;padding:24px;color:var(--text3)">Nenhum evento cadastrado</div>'}
+    </div>
+  </div>`;
+}
+
+// ──────────────────────────────────────────────────────────
+// PAGE: CLIENTES
+// ──────────────────────────────────────────────────────────
+function pgClientes(){
+  const rows=ST.clientes.map(c=>`<tr>
+    <td><b>${c.nome}</b></td><td>${c.cpf||c.cnpj||'—'}</td><td>${c.telefone||'—'}</td><td>${c.email||'—'}</td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn-ic" onclick="openModal('cliente','${c.id}')"><i class="ti ti-edit"></i></button>
+      <button class="btn-ic" onclick="delDoc('clientes','${c.id}')" style="color:var(--danger)"><i class="ti ti-trash"></i></button>
+    </div></td></tr>`).join('');
+  return `<div class="card"><div class="ch"><span class="ct">Clientes (${ST.clientes.length})</span>
+    <div class="sw"><i class="ti ti-search"></i><input placeholder="Buscar..." oninput="filterTbl(this,'tc')" style="width:190px"></div></div>
+    <div class="tw"><table id="tc"><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text3)">Nenhum cliente cadastrado</td></tr>'}</tbody></table></div></div>`;
+}
+
+// ──────────────────────────────────────────────────────────
+// PAGE: FORNECEDORES
+// ──────────────────────────────────────────────────────────
+function pgFornecedores(){
+  const rows=ST.fornecs.map(f=>`<tr>
+    <td><b>${f.nome}</b></td><td>${f.cpf||f.cnpj||'—'}</td>
+    <td><span class="b b-amber">${f.tipo_fornecedor||'—'}</span></td>
+    <td>${f.telefone||'—'}</td><td>${f.email||'—'}</td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn-ic" onclick="openModal('fornecedor','${f.id}')"><i class="ti ti-edit"></i></button>
+      <button class="btn-ic" onclick="delDoc('fornecs','${f.id}')" style="color:var(--danger)"><i class="ti ti-trash"></i></button>
+    </div></td></tr>`).join('');
+  return `<div class="card"><div class="ch"><span class="ct">Fornecedores (${ST.fornecs.length})</span>
+    <div class="sw"><i class="ti ti-search"></i><input placeholder="Buscar..." oninput="filterTbl(this,'tf')" style="width:190px"></div></div>
+    <div class="tw"><table id="tf"><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Tipo</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text3)">Nenhum fornecedor cadastrado</td></tr>'}</tbody></table></div></div>`;
+}
+
+// ──────────────────────────────────────────────────────────
+// PAGE: CONTRATOS
+// ──────────────────────────────────────────────────────────
+function pgContratos(){
+  const rows=ST.contratos.map(c=>{
+    const cl=ST.clientes.find(x=>x.id===c.cliente_id);
+    const ds=c.data_evento?new Date(c.data_evento+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+    return `<tr>
+      <td><b>#${c.num||c.id.slice(-4)}</b></td><td>${cl?cl.nome:'—'}</td><td>${ds}</td>
+      <td>${c.finalidade||'—'}</td><td>R$ ${(c.valor||0).toLocaleString('pt-BR')}</td>
+      <td><span class="b ${c.status==='confirmado'?'b-green':'b-blue'}">${c.status||'—'}</span></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn-ic" onclick="openModal('contrato','${c.id}')" title="Editar"><i class="ti ti-edit"></i></button>
+        <button class="btn-ic" onclick="gerarPDF('${c.id}')" title="PDF" style="color:var(--info)"><i class="ti ti-file-download"></i></button>
+        <button class="btn-ic" onclick="delDoc('contratos','${c.id}')" title="Excluir" style="color:var(--danger)"><i class="ti ti-trash"></i></button>
+      </div></td></tr>`;
+  }).join('');
+  return `<div class="card"><div class="ch"><span class="ct">Contratos (${ST.contratos.length})</span></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Cliente</th><th>Data</th><th>Finalidade</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text3)">Nenhum contrato cadastrado</td></tr>'}</tbody></table></div></div>`;
+}
+
+// ──────────────────────────────────────────────────────────
+// PAGE: AGENDA
+// ──────────────────────────────────────────────────────────
+function pgAgenda(){
+  const d=ST.calDate,yr=d.getFullYear(),mo=d.getMonth();
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const first=new Date(yr,mo,1).getDay(),last=new Date(yr,mo+1,0).getDate();
+  const today=new Date(),prevLen=new Date(yr,mo,0).getDate();
+  let cells='';
+  dias.forEach(d=>cells+=`<div class="cdl">${d}</div>`);
+  let day=1;
+  for(let i=0;i<42;i++){
+    if(i<first){cells+=`<div class="cd om"><div class="cdn">${prevLen-first+i+1}</div></div>`;}
+    else if(day>last){cells+=`<div class="cd om"><div class="cdn">${day++-last}</div></div>`;}
+    else{
+      const isT=today.getFullYear()===yr&&today.getMonth()===mo&&today.getDate()===day;
+      const d2=`${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const evts=ST.eventos.filter(ev=>{const c=ST.contratos.find(x=>x.id===ev.contrato_id);return c&&c.data_evento===d2;});
+      const evHtml=evts.map(ev=>{const c=ST.contratos.find(x=>x.id===ev.contrato_id);const cl=ST.clientes.find(x=>x.id===(c?c.cliente_id:''));return `<div class="ce ${ev.status}">${cl?cl.nome.split(' ')[0]:'Evento'}</div>`;}).join('');
+      cells+=`<div class="cd${isT?' td':''}" onclick="calClick('${d2}')"><div class="cdn">${day}</div>${evHtml}</div>`;
+      day++;
+    }
+  }
+  return `<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <button class="btn btn-secondary btn-sm" onclick="calMv(-1)"><i class="ti ti-chevron-left"></i></button>
+      <b style="font-size:15px;font-weight:700">${meses[mo]} ${yr}</b>
+      <button class="btn btn-secondary btn-sm" onclick="calMv(1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+    <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:2px;background:#bfdbf7;display:inline-block"></span>Reserva</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:2px;background:#bbf0d0;display:inline-block"></span>Confirmado</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:2px;background:#fff;border:1px solid var(--border);display:inline-block"></span>Livre</span>
+    </div>
+    <div class="cg">${cells}</div>
+  </div>`;
+}
+window.calMv=function(dir){ST.calDate=new Date(ST.calDate.getFullYear(),ST.calDate.getMonth()+dir,1);renderPage();};
+window.calClick=function(date){
+  const evts=ST.eventos.filter(ev=>{const c=ST.contratos.find(x=>x.id===ev.contrato_id);return c&&c.data_evento===date;});
+  if(evts.length){const ev=evts[0];const c=ST.contratos.find(x=>x.id===ev.contrato_id);const cl=ST.clientes.find(x=>x.id===(c?c.cliente_id:''));alert(`Evento: ${c?c.finalidade:'—'}\nCliente: ${cl?cl.nome:'—'}\nStatus: ${ev.status}\nHorário: ${c?c.horario_inicio+' às '+c.horario_fim:'—'}\nConvidados: ${c?c.num_convidados:0}`);}
+};
+
+// ──────────────────────────────────────────────────────────
+// PAGE: FINANCEIRO
+// ──────────────────────────────────────────────────────────
+function pgFinanceiro(){
+  const tab=ST.finTab;
+  const lista=ST.financ.filter(f=>f.tipo===tab);
+  const tot=lista.reduce((s,f)=>s+f.valor,0);
+  const pago=lista.filter(f=>f.status==='pago').reduce((s,f)=>s+f.valor,0);
+  const pend=lista.filter(f=>f.status==='pendente').reduce((s,f)=>s+f.valor,0);
+  const rows=lista.map(f=>`<tr>
+    <td>${f.descricao}</td><td>R$ ${f.valor.toLocaleString('pt-BR')}</td>
+    <td>${f.vencimento?new Date(f.vencimento+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</td>
+    <td><span class="b ${f.status==='pago'?'b-green':'b-amber'}">${f.status}</span></td>
+    <td><div style="display:flex;gap:4px">
+      ${f.status==='pendente'?`<button class="btn btn-sm btn-success" onclick="marcarPago('${f.id}')"><i class="ti ti-check"></i> Pago</button>`:''}
+      <button class="btn-ic" onclick="delDoc('financ','${f.id}')" style="color:var(--danger)"><i class="ti ti-trash"></i></button>
+    </div></td></tr>`).join('');
+  return `
+  <div class="sg" style="grid-template-columns:repeat(3,1fr)">
+    <div class="sc"><div class="sc-l">Total</div><div class="sc-v">R$ ${tot.toLocaleString('pt-BR')}</div></div>
+    <div class="sc grn"><div class="sc-l">${tab==='receber'?'Recebido':'Pago'}</div><div class="sc-v">R$ ${pago.toLocaleString('pt-BR')}</div></div>
+    <div class="sc ${tab==='receber'?'blu':'red'}"><div class="sc-l">${tab==='receber'?'A Receber':'A Pagar'}</div><div class="sc-v">R$ ${pend.toLocaleString('pt-BR')}</div></div>
+  </div>
+  <div class="card">
+    <div class="ch">
+      <div class="ftabs">
+        <div class="ftab ${tab==='receber'?'act':''}" onclick="setFin('receber')">Contas a Receber</div>
+        <div class="ftab ${tab==='pagar'?'act':''}" onclick="setFin('pagar')">Contas a Pagar</div>
+      </div>
+    </div>
+    <div class="tw"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text3)">Nenhum lançamento</td></tr>'}</tbody></table></div>
+  </div>`;
+}
+window.setFin=function(t){ST.finTab=t;renderPage();};
+window.marcarPago=async function(id){
+  await DB.upd('financ',id,{status:'pago'});
+  toast('Lançamento marcado como pago');
+};
+
+// ──────────────────────────────────────────────────────────
+// PAGE: USUÁRIOS
+// ──────────────────────────────────────────────────────────
+function pgUsuarios(){
+  const rows=ST.users.map(u=>`<tr>
+    <td><b>${u.nome}</b></td><td>${u.username}</td>
+    <td><span class="b b-blue">${u.role==='admin'?'Administrador':'Operador'}</span></td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn-ic" onclick="openModal('usuario','${u.id}')"><i class="ti ti-edit"></i></button>
+      ${ST.users.length>1?`<button class="btn-ic" onclick="delDoc('users','${u.id}')" style="color:var(--danger)"><i class="ti ti-trash"></i></button>`:''}
+    </div></td></tr>`).join('');
+  return `<div class="card">
+    <div class="ch"><span class="ct">Usuários (${ST.users.length})</span>
+    <button class="btn btn-primary" onclick="openModal('usuario')"><i class="ti ti-plus"></i> Novo Usuário</button></div>
+    <div class="wbox" style="margin-bottom:14px"><i class="ti ti-info-circle" style="margin-right:4px"></i>Para uso profissional, recomenda-se usar Firebase Authentication no lugar de senhas em texto simples.</div>
+    <div class="tw"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Ações</th></tr></thead>
+    <tbody>${rows}</tbody></table></div></div>`;
+}
+
+// ──────────────────────────────────────────────────────────
+// PAGE: CONFIGURAÇÕES
+// ──────────────────────────────────────────────────────────
+function pgConfiguracoes(){
+  const L=ST.locador;
+  const tpix=['cpf','cnpj','email','telefone','aleatoria'];
+  const tconta=['corrente','poupança'];
+  return `<div class="card"><div class="fg">
+    <div class="sdiv">Identificação do Locador</div>
+    <div class="fi ff"><label>Nome completo *</label><input id="lc-nome" value="${L.nome||''}"></div>
+    <div class="fi"><label>Estado Civil</label><input id="lc-ecivil" value="${L.estado_civil||''}"></div>
+    <div class="fi"><label>Profissão</label><input id="lc-prof" value="${L.profissao||''}"></div>
+    <div class="fi"><label>RG</label><input id="lc-rg" value="${L.rg||''}"></div>
+    <div class="fi"><label>Órgão Emissor</label><input id="lc-orgao" value="${L.orgao_rg||''}" placeholder="SSP/MG"></div>
+    <div class="fi"><label>CPF *</label><input id="lc-cpf" value="${L.cpf||''}"></div>
+    <div class="fi ff"><label>Endereço residencial</label><input id="lc-end" value="${L.endereco||''}"></div>
+    <div class="fi"><label>CEP residencial</label><input id="lc-cep" value="${L.cep||''}"></div>
+    <div class="sdiv">Dados do Salão</div>
+    <div class="fi ff"><label>Nome do Salão</label><input id="lc-nsalao" value="${L.nome_salao||''}"></div>
+    <div class="fi ff"><label>Endereço do Salão</label><input id="lc-esalao" value="${L.end_salao||''}"></div>
+    <div class="fi"><label>CEP do Salão</label><input id="lc-csalao" value="${L.cep_salao||''}"></div>
+    <div class="fi ff"><label>Descrição das instalações</label><textarea id="lc-dsalao">${L.desc_salao||''}</textarea></div>
+    <div class="sdiv">Dados de Pagamento (aparecem no contrato PDF)</div>
+    <div class="fi"><label>Tipo de Chave Pix</label>
+      <select id="lc-tipopix">${tpix.map(t=>`<option value="${t}"${L.tipo_pix===t?' selected':''}>${t[0].toUpperCase()+t.slice(1)}</option>`).join('')}</select></div>
+    <div class="fi"><label>Chave Pix</label><input id="lc-pix" value="${L.chave_pix||''}" placeholder="Sua chave pix"></div>
+    <div class="fi"><label>Banco</label><input id="lc-banco" value="${L.banco||''}" placeholder="Ex: Banco do Brasil, Itaú..."></div>
+    <div class="fi"><label>Agência</label><input id="lc-agencia" value="${L.agencia||''}" placeholder="0000-0"></div>
+    <div class="fi"><label>Conta</label><input id="lc-conta" value="${L.conta||''}" placeholder="00000-0"></div>
+    <div class="fi"><label>Tipo de Conta</label>
+      <select id="lc-tipoconta">${tconta.map(t=>`<option value="${t}"${L.tipo_conta===t?' selected':''}>${t[0].toUpperCase()+t.slice(1)}</option>`).join('')}</select></div>
+    <div class="sdiv">Termos Jurídicos</div>
+    <div class="fi ff"><label>Lei municipal de ruído</label><input id="lc-lei" value="${L.lei_ruido||''}"></div>
+    <div class="fi"><label>Hora de moderação de som</label><input id="lc-hruido" value="${L.hora_ruido||''}" placeholder="23:00"></div>
+    <div class="fi"><label>Foro de eleição</label><input id="lc-foro" value="${L.foro||''}"></div>
+  </div></div>`;
+}
+window.saveLocador=async function(){
+  const m={nome:'lc-nome',estado_civil:'lc-ecivil',profissao:'lc-prof',rg:'lc-rg',orgao_rg:'lc-orgao',cpf:'lc-cpf',endereco:'lc-end',cep:'lc-cep',nome_salao:'lc-nsalao',end_salao:'lc-esalao',cep_salao:'lc-csalao',desc_salao:'lc-dsalao',chave_pix:'lc-pix',tipo_pix:'lc-tipopix',banco:'lc-banco',agencia:'lc-agencia',conta:'lc-conta',tipo_conta:'lc-tipoconta',lei_ruido:'lc-lei',hora_ruido:'lc-hruido',foro:'lc-foro'};
+  for(const k in m){const el=document.getElementById(m[k]);if(el)ST.locador[k]=el.value.trim();}
+  await DB.set('config','locador',ST.locador);
+  toast('Configurações salvas!');
+};
+
+// ──────────────────────────────────────────────────────────
+// MODAL
+// ──────────────────────────────────────────────────────────
+window.openModal=function(type,id=null){
+  const TIPOS_FORN=['Açougue / Carnes','Churrasqueiro','Cozinheiro / Chef','DJ / Sonorização','Banda / Músico','Buffet','Decoração','Flores / Floricultura','Fotógrafo / Filmagem','Garçom / Serviço','Segurança','Limpeza','Bebidas / Bar','Bolo / Confeitaria','Outros'];
+  let title='',body='',save='';
+  if(type==='cliente'||type==='fornecedor'){
+    const isForn=type==='fornecedor';
+    const pfx=isForn?'f':'c';
+    const r=id?(isForn?ST.fornecs:ST.clientes).find(x=>x.id===id):null;
+    title=`${id?'Editar':'Novo'} ${isForn?'Fornecedor':'Cliente'}`;
+    body=`<div class="fg">
+      <div class="fi ff"><label>Nome completo *</label><input id="${pfx}-nome" value="${r?.nome||''}"></div>
+      <div class="fi"><label>CPF</label><input id="${pfx}-cpf" value="${r?.cpf||''}" placeholder="000.000.000-00"></div>
+      <div class="fi"><label>CNPJ</label><input id="${pfx}-cnpj" value="${r?.cnpj||''}" placeholder="00.000.000/0001-00"></div>
+      <div class="fi"><label>Data de Nascimento</label><input type="date" id="${pfx}-nasc" value="${r?.nascimento||''}"></div>
+      ${isForn?`<div class="fi"><label>Tipo de Fornecedor *</label><select id="f-tipo">${TIPOS_FORN.map(t=>`<option${r?.tipo_fornecedor===t?' selected':''}>${t}</option>`).join('')}</select></div>`:''}
+      <div class="fi ff"><label>Endereço</label><input id="${pfx}-end" value="${r?.endereco||''}"></div>
+      <div class="fi"><label>Telefone</label><input id="${pfx}-tel" value="${r?.telefone||''}" placeholder="(XX) 9XXXX-XXXX"></div>
+      <div class="fi"><label>E-mail</label><input type="email" id="${pfx}-email" value="${r?.email||''}"></div>
+    </div>`;
+    save=`savePessoa('${type}','${id||''}')`;
+  }
+  else if(type==='contrato'){
+    const r=id?ST.contratos.find(x=>x.id===id):null;
+    const clOpts=ST.clientes.map(c=>`<option value="${c.id}"${r?.cliente_id===c.id?' selected':''}>${c.nome}</option>`).join('');
+    const uL=r?.usar_limpeza!==false,uC=r?.usar_caucao!==false;
+    title=`${id?'Editar':'Novo'} Contrato`;
+    body=`<div class="fg">
+      <div class="sdiv">Identificação</div>
+      <div class="fi ff"><label>Cliente *</label><select id="ct-cl"><option value="">Selecione...</option>${clOpts}</select></div>
+      <div class="fi"><label>Data do Evento *</label><input type="date" id="ct-data" value="${r?.data_evento||''}"></div>
+      <div class="fi"><label>Horário Início</label><input type="time" id="ct-ini" value="${r?.horario_inicio||''}"></div>
+      <div class="fi"><label>Horário Fim</label><input type="time" id="ct-fim" value="${r?.horario_fim||''}"></div>
+      <div class="fi ff"><label>Finalidade *</label><input id="ct-final" value="${r?.finalidade||''}" placeholder="Festa de Aniversário, Casamento..."></div>
+      <div class="fi"><label>Nº de Convidados</label><input type="number" id="ct-conv" value="${r?.num_convidados||''}"></div>
+      <div class="fi"><label>Status</label><select id="ct-st"><option value="reserva"${r?.status==='reserva'?' selected':''}>Reserva</option><option value="confirmado"${r?.status==='confirmado'?' selected':''}>Confirmado</option></select></div>
+      <div class="sdiv">Valores</div>
+      <div class="fi"><label>Valor Total (R$) *</label><input type="number" id="ct-val" value="${r?.valor||''}"></div>
+      <div class="fi"><label>Valor Sinal (R$)</label><input type="number" id="ct-sinal" value="${r?.valor_sinal||''}"></div>
+      <div class="fi"><label>Data Sinal</label><input type="date" id="ct-dsinal" value="${r?.data_sinal||''}"></div>
+      <div class="fi"><label>Valor Restante (R$)</label><input type="number" id="ct-rest" value="${r?.valor_restante||''}"></div>
+      <div class="fi"><label>Data Restante</label><input type="date" id="ct-drest" value="${r?.data_restante||''}"></div>
+      <div class="sdiv">Cláusulas Opcionais</div>
+      <div class="ibox ff"><i class="ti ti-info-circle" style="margin-right:4px"></i>Marque para incluir a cláusula no PDF e gerar lançamento financeiro.</div>
+      <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label class="ctog${uL?' on':''}" id="tgl-l" onclick="tglCT('l')">
+          <input type="checkbox" id="ct-ul" ${uL?'checked':''} onclick="event.stopPropagation()">
+          <div><div style="font-size:13px;font-weight:600">Taxa de Limpeza</div><div style="font-size:11px;color:var(--text2)">Cláusula + lançamento</div></div>
+        </label>
+        <label class="ctog${uC?' on':''}" id="tgl-c" onclick="tglCT('c')">
+          <input type="checkbox" id="ct-uc" ${uC?'checked':''} onclick="event.stopPropagation()">
+          <div><div style="font-size:13px;font-weight:600">Caução / Garantia</div><div style="font-size:11px;color:var(--text2)">Cláusula + lançamento</div></div>
+        </label>
+      </div>
+      <div class="fi" id="rw-l" style="opacity:${uL?1:.4}"><label>Valor Limpeza (R$)</label><input type="number" id="ct-limp" value="${r?.taxa_limpeza||250}"></div>
+      <div class="fi" id="rw-c" style="opacity:${uC?1:.4}"><label>Valor Caução (R$)</label><input type="number" id="ct-cauc" value="${r?.caucao||500}"></div>
+      <div class="fi ff"><label>Observações</label><textarea id="ct-obs">${r?.observacoes||''}</textarea></div>
+    </div>
+    <script>function tglCT(t){const cb=document.getElementById('ct-u'+t),tg=document.getElementById('tgl-'+t),rw=document.getElementById('rw-'+t);cb.checked=!cb.checked;tg.classList.toggle('on',cb.checked);if(rw)rw.style.opacity=cb.checked?1:.4;}<\/script>`;
+    save=`saveContrato('${id||''}')`;
+  }
+  else if(type==='lancamento'){
+    const ctOpts=ST.contratos.map(c=>{const cl=ST.clientes.find(x=>x.id===c.cliente_id);return `<option value="${c.id}">#${c.num||c.id.slice(-4)} · ${cl?cl.nome:'—'}</option>`;}).join('');
+    title='Novo Lançamento';
+    body=`<div class="fg">
+      <div class="fi ff"><label>Tipo *</label><select id="la-tipo"><option value="receber">A Receber</option><option value="pagar">A Pagar</option></select></div>
+      <div class="fi ff"><label>Descrição *</label><input id="la-desc"></div>
+      <div class="fi"><label>Valor (R$) *</label><input type="number" id="la-val"></div>
+      <div class="fi"><label>Vencimento *</label><input type="date" id="la-venc"></div>
+      <div class="fi"><label>Status</label><select id="la-st"><option value="pendente">Pendente</option><option value="pago">Pago/Recebido</option></select></div>
+      <div class="fi"><label>Contrato vinculado</label><select id="la-ct"><option value="">Nenhum</option>${ctOpts}</select></div>
+    </div>`;
+    save=`saveLancamento()`;
+  }
+  else if(type==='usuario'){
+    const r=id?ST.users.find(x=>x.id===id):null;
+    title=`${id?'Editar':'Novo'} Usuário`;
+    body=`<div class="fg">
+      <div class="fi ff"><label>Nome completo *</label><input id="us-nome" value="${r?.nome||''}"></div>
+      <div class="fi"><label>Nome de usuário (login) *</label><input id="us-user" value="${r?.username||''}" placeholder="sem espaços"></div>
+      <div class="fi"><label>Senha ${id?'(em branco = mantém)':'*'}</label><input type="password" id="us-pass" placeholder="${id?'Nova senha (opcional)':'Mínimo 6 caracteres'}"></div>
+      <div class="fi"><label>Perfil</label><select id="us-role"><option value="admin"${r?.role==='admin'?' selected':''}>Administrador</option><option value="op"${r?.role==='op'?' selected':''}>Operador</option></select></div>
+    </div>`;
+    save=`saveUsuario('${id||''}')`;
+  }
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').innerHTML=body;
+  document.getElementById('modal-foot').innerHTML=`<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="${save}"><i class="ti ti-device-floppy"></i> Salvar</button>`;
+  document.getElementById('modal').classList.add('open');
+};
+window.closeModal=function(){document.getElementById('modal').classList.remove('open');};
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+
+// ──────────────────────────────────────────────────────────
+// SAVES
+// ──────────────────────────────────────────────────────────
+function gv(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function gb(id){const el=document.getElementById(id);return el?el.checked:false;}
+
+window.savePessoa=async function(type,id){
+  const isForn=type==='fornecedor',pfx=isForn?'f':'c';
+  const nome=gv(`${pfx}-nome`);if(!nome){alert('Nome obrigatório');return;}
+  const col=isForn?'fornecs':'clientes';
+  const data={nome,cpf:gv(`${pfx}-cpf`),cnpj:gv(`${pfx}-cnpj`),nascimento:gv(`${pfx}-nasc`),endereco:gv(`${pfx}-end`),telefone:gv(`${pfx}-tel`),email:gv(`${pfx}-email`)};
+  if(isForn)data.tipo_fornecedor=gv('f-tipo');
+  if(id){await DB.upd(col,id,data);toast(`${isForn?'Fornecedor':'Cliente'} atualizado!`);}
+  else{await DB.add(col,data);toast(`${isForn?'Fornecedor':'Cliente'} cadastrado!`);}
+  closeModal();
+};
+
+window.saveContrato=async function(id){
+  const cid=gv('ct-cl');if(!cid){alert('Selecione o cliente');return;}
+  const data=gv('ct-data');if(!data){alert('Informe a data');return;}
+  const uL=gb('ct-ul'),uC=gb('ct-uc');
+  const obj={cliente_id:cid,data_evento:data,horario_inicio:gv('ct-ini'),horario_fim:gv('ct-fim'),finalidade:gv('ct-final'),num_convidados:parseInt(gv('ct-conv'))||0,valor:parseFloat(gv('ct-val'))||0,valor_sinal:parseFloat(gv('ct-sinal'))||0,data_sinal:gv('ct-dsinal'),valor_restante:parseFloat(gv('ct-rest'))||0,data_restante:gv('ct-drest'),taxa_limpeza:parseFloat(gv('ct-limp'))||250,usar_limpeza:uL,caucao:parseFloat(gv('ct-cauc'))||500,usar_caucao:uC,status:gv('ct-st'),observacoes:gv('ct-obs'),num:ST.contratos.length+1};
+  const clNome=ST.clientes.find(x=>x.id===cid)?.nome||'';
+  if(id){await DB.upd('contratos',id,obj);toast('Contrato atualizado!');}
+  else{
+    const cid2=await DB.add('contratos',obj);
+    const n=obj.num;
+    if(obj.valor_sinal>0&&obj.data_sinal) await DB.add('financ',{tipo:'receber',descricao:`Sinal - Contrato #${n} (${clNome})`,valor:obj.valor_sinal,vencimento:obj.data_sinal,status:'pendente',contrato_id:cid2});
+    if(obj.valor_restante>0&&obj.data_restante) await DB.add('financ',{tipo:'receber',descricao:`Restante - Contrato #${n} (${clNome})`,valor:obj.valor_restante,vencimento:obj.data_restante,status:'pendente',contrato_id:cid2});
+    if(uL&&obj.taxa_limpeza>0&&obj.data_restante) await DB.add('financ',{tipo:'receber',descricao:`Taxa Limpeza - Contrato #${n} (${clNome})`,valor:obj.taxa_limpeza,vencimento:obj.data_restante,status:'pendente',contrato_id:cid2});
+    if(uC&&obj.caucao>0&&obj.data_sinal) await DB.add('financ',{tipo:'receber',descricao:`Caução - Contrato #${n} (${clNome})`,valor:obj.caucao,vencimento:obj.data_sinal,status:'pendente',contrato_id:cid2});
+    await DB.add('eventos',{contrato_id:cid2,status:obj.status});
+    toast('Contrato cadastrado e evento adicionado à agenda!');
+  }
+  closeModal();
+};
+
+window.saveLancamento=async function(){
+  const desc=gv('la-desc');if(!desc){alert('Informe a descrição');return;}
+  const valor=parseFloat(gv('la-val'));if(!valor){alert('Informe o valor');return;}
+  const venc=gv('la-venc');if(!venc){alert('Informe o vencimento');return;}
+  await DB.add('financ',{tipo:gv('la-tipo'),descricao:desc,valor,vencimento:venc,status:gv('la-st'),contrato_id:gv('la-ct')||null});
+  toast('Lançamento criado!');
+  closeModal();
+};
+
+window.saveUsuario=async function(id){
+  const nome=gv('us-nome');if(!nome){alert('Nome obrigatório');return;}
+  const username=gv('us-user').toLowerCase().replace(/\s/g,'');if(!username){alert('Usuário obrigatório');return;}
+  const pass=gv('us-pass');
+  if(!id&&pass.length<6){alert('Senha mínima de 6 caracteres');return;}
+  if(ST.users.find(x=>x.username===username&&x.id!==id)){alert('Este usuário já existe');return;}
+  if(id){
+    const upd={nome,username,role:gv('us-role')};
+    if(pass.length>=6)upd.password=pass;
+    await DB.upd('users',id,upd);
+  }else{
+    await DB.add('users',{username,password:pass,nome,role:gv('us-role')});
+  }
+  toast('Usuário salvo!');closeModal();
+};
+
+window.delDoc=async function(col,id){
+  if(!confirm('Confirma exclusão? Esta ação não pode ser desfeita.'))return;
+  await DB.del(col,id);
+  toast('Registro excluído');
+};
+
+// ──────────────────────────────────────────────────────────
+// PDF
+// ──────────────────────────────────────────────────────────
+window.gerarPDF=function(id){
+  const c=ST.contratos.find(x=>x.id===id);if(!c)return;
+  const cl=ST.clientes.find(x=>x.id===c.cliente_id);
+  const L=ST.locador;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const lm=20,rm=190,lw=170;let y=20;
+  const ln=(n=5)=>{y+=n;};
+  const hd=(t,sz=13)=>{doc.setFontSize(sz);doc.setFont('helvetica','bold');doc.text(t,105,y,{align:'center'});ln(sz*.45);};
+  const par=(t,sz=10,bold=false)=>{doc.setFontSize(sz);doc.setFont('helvetica',bold?'bold':'normal');const ls=doc.splitTextToSize(t,lw);ls.forEach(l=>{if(y>272){doc.addPage();y=20;}doc.text(l,lm,y);y+=sz*.42;});ln(2);};
+  const hr=()=>{doc.setDrawColor(180);doc.line(lm,y,rm,y);ln(4);};
+  const clNome=cl?cl.nome:'_______________',clCpf=cl?cl.cpf||cl.cnpj:'_______________',clEnd=cl?cl.endereco:'_______________';
+  hd('CONTRATO DE LOCAÇÃO DE SALÃO DE FESTAS PARA EVENTO');ln(3);hr();
+  par('Pelo presente instrumento particular, de um lado:');
+  par(`LOCADOR: ${L.nome||'___'}, ${L.estado_civil||'___'}, ${L.profissao||'___'}, RG nº ${L.rg||'___'} ${L.orgao_rg||''}, CPF nº ${L.cpf||'___'}, residente na ${L.endereco||'___'}, CEP ${L.cep||'___'};`);
+  par(`LOCATÁRIO(A): ${clNome}, CPF/CNPJ nº ${clCpf}, residente em ${clEnd}.`);
+  hr();
+  par('CLÁUSULA PRIMEIRA – DO OBJETO DA LOCAÇÃO',10,true);
+  par(`1.1. O objeto é a locação do imóvel "${L.nome_salao||'___'}", na ${L.end_salao||'___'}, CEP ${L.cep_salao||'___'}.`);
+  par(`1.2. A locação inclui: ${L.desc_salao||'___'}`);
+  par('CLÁUSULA SEGUNDA – DA FINALIDADE E PRAZO',10,true);
+  const de=c.data_evento?new Date(c.data_evento+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  par(`2.1. Finalidade: ${c.finalidade||'—'}, em ${de}.`);
+  par(`2.2. Início: ${c.horario_inicio||'—'} · Encerramento: ${c.horario_fim||'—'}.`);
+  par(`2.3. Convidados estimados: ${c.num_convidados||'—'} pessoas.`);
+  par('CLÁUSULA TERCEIRA – DO VALOR E PAGAMENTO',10,true);
+  par(`3.1. Valor total: R$ ${(c.valor||0).toLocaleString('pt-BR')}.`);
+  par(`3.2. Sinal: R$ ${(c.valor_sinal||0).toLocaleString('pt-BR')} no ato. Saldo: R$ ${(c.valor_restante||0).toLocaleString('pt-BR')} até ${c.data_restante?new Date(c.data_restante+'T12:00:00').toLocaleDateString('pt-BR'):'—'}.`);
+  par(`3.3. Atraso: multa 2% + juros 1% a.m. + IPCA.`);
+  let dadosPgto=[];
+  if(L.chave_pix)dadosPgto.push(`PIX (${L.tipo_pix||''}): ${L.chave_pix}`);
+  if(L.banco)dadosPgto.push(`Banco: ${L.banco} | Ag: ${L.agencia||'—'} | Conta ${L.tipo_conta||''}: ${L.conta||'—'}`);
+  if(dadosPgto.length)par(`3.4. Dados para pagamento: ${dadosPgto.join(' | ')}`);
+  let n=4;
+  const rom=['PRIMEIRA','SEGUNDA','TERCEIRA','QUARTA','QUINTA','SEXTA','SÉTIMA','OITAVA','NONA','DÉCIMA'];
+  if(c.usar_limpeza){par(`CLÁUSULA ${rom[n-1]} – DA TAXA DE LIMPEZA`,10,true);par(`${n}.1. Taxa de limpeza: R$ ${(c.taxa_limpeza||0).toLocaleString('pt-BR')}, paga com o saldo.`);par(`${n}.2. Sujeira excessiva será cobrada adicionalmente.`);n++;}
+  if(c.usar_caucao){par(`CLÁUSULA ${rom[n-1]} – DO CAUÇÃO`,10,true);par(`${n}.1. Caução: R$ ${(c.caucao||0).toLocaleString('pt-BR')}, depositado no ato.`);par(`${n}.2. Devolvido em até 5 dias úteis após vistoria sem danos.`);n++;}
+  par(`CLÁUSULA ${rom[n-1]} – DO RUÍDO`,10,true);par(`${n}.1. O LOCATÁRIO cumprirá a ${L.lei_ruido||'legislação municipal'}.`);par(`${n}.2. Volume moderado a partir das ${L.hora_ruido||'23:00'}. Multas são de responsabilidade do LOCATÁRIO.`);n++;
+  par(`CLÁUSULA ${rom[n-1]} – DAS RESPONSABILIDADES`,10,true);par(`${n}.1. O LOCATÁRIO responde por danos materiais e pessoais ocorridos durante a locação.`);par(`${n}.2. Sublocação vedada sem autorização expressa.`);n++;
+  par(`CLÁUSULA ${rom[n-1]} – DA RESCISÃO`,10,true);par(`${n}.1. Culpa do LOCATÁRIO: retenção do sinal. Culpa do LOCADOR: devolução em dobro.`);n++;
+  par(`CLÁUSULA ${rom[n-1]} – DO FORO`,10,true);par(`${n}.1. Foro da Comarca de ${L.foro||'___'}.`);
+  hr();par(`Uberlândia/MG, ${new Date().toLocaleDateString('pt-BR')}.`);ln(8);
+  doc.setFontSize(10);
+  doc.text('______________________________',lm,y);doc.text('______________________________',105,y);ln(5);
+  doc.text(`LOCADOR: ${L.nome||'___'}`,lm,y);doc.text(`LOCATÁRIO: ${clNome}`,105,y);ln(5);
+  doc.text(`CPF: ${L.cpf||'___'}`,lm,y);doc.text(`CPF: ${clCpf}`,105,y);ln(12);
+  doc.text('Testemunha 1: _________________________ CPF: _______________',lm,y);ln(8);
+  doc.text('Testemunha 2: _________________________ CPF: _______________',lm,y);ln(10);
+  par('Nota: Recomenda-se revisão por advogado para plena validade jurídica.',9);
+  doc.save(`Contrato_${c.num||id.slice(-4)}_${clNome.replace(/\s/g,'_')}.pdf`);
+};
+
+// ──────────────────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────────────────
+window.filterTbl=function(input,tid){
+  const v=input.value.toLowerCase();
+  document.querySelectorAll(`#${tid} tbody tr`).forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(v)?'':'none';});
+};
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function defaultLocador(){
+  return {nome:'',estado_civil:'',profissao:'',rg:'',orgao_rg:'SSP/MG',cpf:'',endereco:'',cep:'',nome_salao:'Salão de Festas',end_salao:'',cep_salao:'',desc_salao:'',chave_pix:'',tipo_pix:'cpf',banco:'',agencia:'',conta:'',tipo_conta:'corrente',lei_ruido:'Lei Municipal de Poluição Sonora',hora_ruido:'23:00',foro:'Uberlândia, Estado de Minas Gerais'};
+}
+
+// START
+boot();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</body>
+</html>
