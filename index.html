@@ -152,6 +152,7 @@ tr:hover td{background:#faf7f3}
 .ce{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
 .ce.reserva{background:#bfdbf7;color:#1a4a7a}
 .ce.confirmado{background:#bbf0d0;color:#155230}
+.ce.pre-agenda{background:#ffd0d0;color:#8b1a1a}
 
 /* ── FIN TABS ── */
 .ftabs{display:flex;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;width:fit-content;margin-bottom:14px}
@@ -281,16 +282,14 @@ import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateD
 // ╔══════════════════════════════════════════════════════════╗
 // ║  ⚠️  SUBSTITUA PELOS SEUS DADOS DO FIREBASE  ⚠️          ║
 // ╚══════════════════════════════════════════════════════════╝
- const firebaseConfig = {
-    apiKey: "AIzaSyARy1VerzcXdUJCBzHQA8DrJmK6vdqF5Io",
-    authDomain: "recanto-do-aconchego-eventos.firebaseapp.com",
-    projectId: "recanto-do-aconchego-eventos",
-    storageBucket: "recanto-do-aconchego-eventos.firebasestorage.app",
-    messagingSenderId: "567805314565",
-    appId: "1:567805314565:web:1a06a2ec659751d7e1be6c",
-    measurementId: "G-032GT4SD1K"
-  };
-
+const firebaseConfig = {
+  apiKey:            "COLE_SUA_API_KEY_AQUI",
+  authDomain:        "COLE_SEU_AUTH_DOMAIN_AQUI",
+  projectId:         "COLE_SEU_PROJECT_ID_AQUI",
+  storageBucket:     "COLE_SEU_STORAGE_BUCKET_AQUI",
+  messagingSenderId: "COLE_SEU_MESSAGING_SENDER_ID_AQUI",
+  appId:             "COLE_SEU_APP_ID_AQUI"
+};
 
 const fbApp = initializeApp(firebaseConfig);
 const db    = getFirestore(fbApp);
@@ -301,7 +300,7 @@ const db    = getFirestore(fbApp);
 window.ST = {
   user: null, page: 'dashboard', finTab: 'receber',
   calDate: new Date(),
-  users:[], clientes:[], fornecs:[], contratos:[], eventos:[], financ:[],
+  users:[], clientes:[], fornecs:[], contratos:[], eventos:[], financ:[], pre_agenda:[],
   locador: {}
 };
 
@@ -327,9 +326,9 @@ async function boot(){
     ST.locador = locDoc || defaultLocador();
 
     // Carrega coleções iniciais em paralelo
-    const [users,clientes,fornecs,contratos,eventos,financ] = await Promise.all([
+    const [users,clientes,fornecs,contratos,eventos,financ,pre_agenda] = await Promise.all([
       DB.getAll('users'), DB.getAll('clientes'), DB.getAll('fornecs'),
-      DB.getAll('contratos'), DB.getAll('eventos'), DB.getAll('financ')
+      DB.getAll('contratos'), DB.getAll('eventos'), DB.getAll('financ'), DB.getAll('pre_agenda')
     ]);
 
     ST.users    = users;
@@ -338,6 +337,7 @@ async function boot(){
     ST.contratos= contratos;
     ST.eventos  = eventos;
     ST.financ   = financ;
+    ST.pre_agenda = pre_agenda;
 
     // Usuários padrão se banco vazio
     if(!ST.users.length){
@@ -353,6 +353,7 @@ async function boot(){
     DB.listen('eventos',   d=>{ST.eventos=d;   if(ST.page==='agenda')      renderPage();});
     DB.listen('financ',    d=>{ST.financ=d;    if(ST.page==='financeiro')  renderPage();});
     DB.listen('users',     d=>{ST.users=d;     if(ST.page==='usuarios')    renderPage();});
+    DB.listen('pre_agenda',d=>{ST.pre_agenda=d;if(ST.page==='agenda')      renderPage();});
 
     setSyncStatus('ok','Sincronizado');
     document.getElementById('boot').style.display='none';
@@ -449,6 +450,7 @@ window.navigate=function(page){
     clientes:`<button class="btn btn-primary" onclick="openModal('cliente')"><i class="ti ti-plus"></i> Novo Cliente</button>`,
     fornecedores:`<button class="btn btn-primary" onclick="openModal('fornecedor')"><i class="ti ti-plus"></i> Novo Fornecedor</button>`,
     contratos:`<button class="btn btn-primary" onclick="openModal('contrato')"><i class="ti ti-plus"></i> Novo Contrato</button>`,
+    agenda:`<button class="btn btn-secondary" onclick="openModal('pre_agenda')" style="border-color:#e57373;color:#b83030"><i class="ti ti-calendar-question"></i> Pré-Agenda</button><button class="btn btn-primary" onclick="openModal('evento')"><i class="ti ti-calendar-plus"></i> Incluir Evento</button>`,
     financeiro:`<button class="btn btn-primary" onclick="openModal('lancamento')"><i class="ti ti-plus"></i> Lançamento</button>`,
     configuracoes:`<button class="btn btn-primary" onclick="saveLocador()"><i class="ti ti-device-floppy"></i> Salvar</button>`,
   };
@@ -586,8 +588,15 @@ function pgAgenda(){
     else{
       const isT=today.getFullYear()===yr&&today.getMonth()===mo&&today.getDate()===day;
       const d2=`${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      // eventos de contrato
       const evts=ST.eventos.filter(ev=>{const c=ST.contratos.find(x=>x.id===ev.contrato_id);return c&&c.data_evento===d2;});
-      const evHtml=evts.map(ev=>{const c=ST.contratos.find(x=>x.id===ev.contrato_id);const cl=ST.clientes.find(x=>x.id===(c?c.cliente_id:''));return `<div class="ce ${ev.status}">${cl?cl.nome.split(' ')[0]:'Evento'}</div>`;}).join('');
+      // pré-agendas
+      const preEvts=(ST.pre_agenda||[]).filter(p=>p.data===d2);
+      const evHtml=evts.map(ev=>{
+        const c=ST.contratos.find(x=>x.id===ev.contrato_id);
+        const cl=ST.clientes.find(x=>x.id===(c?c.cliente_id:''));
+        return `<div class="ce ${ev.status}">${cl?cl.nome.split(' ')[0]:'Evento'}</div>`;
+      }).join('')+preEvts.map(p=>`<div class="ce pre-agenda" title="${p.descricao}">📋 ${p.descricao.substring(0,14)}${p.descricao.length>14?'…':''}</div>`).join('');
       cells+=`<div class="cd${isT?' td':''}" onclick="calClick('${d2}')"><div class="cdn">${day}</div>${evHtml}</div>`;
       day++;
     }
@@ -598,9 +607,10 @@ function pgAgenda(){
       <b style="font-size:15px;font-weight:700">${meses[mo]} ${yr}</b>
       <button class="btn btn-secondary btn-sm" onclick="calMv(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
-    <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
       <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:2px;background:#bfdbf7;display:inline-block"></span>Reserva</span>
       <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:2px;background:#bbf0d0;display:inline-block"></span>Confirmado</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:2px;background:#ffd0d0;display:inline-block"></span>Pré-Agenda</span>
       <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:12px;height:12px;border-radius:2px;background:#fff;border:1px solid var(--border);display:inline-block"></span>Livre</span>
     </div>
     <div class="cg">${cells}</div>
@@ -609,7 +619,21 @@ function pgAgenda(){
 window.calMv=function(dir){ST.calDate=new Date(ST.calDate.getFullYear(),ST.calDate.getMonth()+dir,1);renderPage();};
 window.calClick=function(date){
   const evts=ST.eventos.filter(ev=>{const c=ST.contratos.find(x=>x.id===ev.contrato_id);return c&&c.data_evento===date;});
-  if(evts.length){const ev=evts[0];const c=ST.contratos.find(x=>x.id===ev.contrato_id);const cl=ST.clientes.find(x=>x.id===(c?c.cliente_id:''));alert(`Evento: ${c?c.finalidade:'—'}\nCliente: ${cl?cl.nome:'—'}\nStatus: ${ev.status}\nHorário: ${c?c.horario_inicio+' às '+c.horario_fim:'—'}\nConvidados: ${c?c.num_convidados:0}`);}
+  const preEvts=(ST.pre_agenda||[]).filter(p=>p.data===date);
+  let msg='';
+  if(evts.length){
+    evts.forEach(ev=>{
+      const c=ST.contratos.find(x=>x.id===ev.contrato_id);
+      const cl=ST.clientes.find(x=>x.id===(c?c.cliente_id:''));
+      msg+=`📅 EVENTO\nCliente: ${cl?cl.nome:'—'}\nFinalidade: ${c?c.finalidade:'—'}\nStatus: ${ev.status}\nHorário: ${c?c.horario_inicio+' às '+c.horario_fim:'—'}\nConvidados: ${c?c.num_convidados:0}\n\n`;
+    });
+  }
+  if(preEvts.length){
+    preEvts.forEach(p=>{
+      msg+=`📋 PRÉ-AGENDA\n${p.descricao}\n(ID: ${p.id})\n\n`;
+    });
+  }
+  if(msg) alert(msg.trim());
 };
 
 // ──────────────────────────────────────────────────────────
@@ -777,6 +801,14 @@ window.openModal=function(type,id=null){
     <script>function tglCT(t){const cb=document.getElementById('ct-u'+t),tg=document.getElementById('tgl-'+t),rw=document.getElementById('rw-'+t);cb.checked=!cb.checked;tg.classList.toggle('on',cb.checked);if(rw)rw.style.opacity=cb.checked?1:.4;}<\/script>`;
     save=`saveContrato('${id||''}')`;
   }
+  else if(type==='pre_agenda'){
+    title='Nova Pré-Agenda';
+    body=`<div class="fg">
+      <div class="fi ff"><label>Data *</label><input type="date" id="pa-data"></div>
+      <div class="fi ff"><label>Descrição do evento *</label><input id="pa-desc" placeholder="Ex: Aniversário 50 anos do Sr. José, Formatura Medicina..."></div>
+    </div>`;
+    save=`savePreAgenda()`;
+  }
   else if(type==='lancamento'){
     const ctOpts=ST.contratos.map(c=>{const cl=ST.clientes.find(x=>x.id===c.cliente_id);return `<option value="${c.id}">#${c.num||c.id.slice(-4)} · ${cl?cl.nome:'—'}</option>`;}).join('');
     title='Novo Lançamento';
@@ -823,6 +855,14 @@ window.savePessoa=async function(type,id){
   if(isForn)data.tipo_fornecedor=gv('f-tipo');
   if(id){await DB.upd(col,id,data);toast(`${isForn?'Fornecedor':'Cliente'} atualizado!`);}
   else{await DB.add(col,data);toast(`${isForn?'Fornecedor':'Cliente'} cadastrado!`);}
+  closeModal();
+};
+
+window.savePreAgenda=async function(){
+  const data=gv('pa-data');if(!data){alert('Informe a data');return;}
+  const desc=gv('pa-desc');if(!desc){alert('Informe a descrição');return;}
+  await DB.add('pre_agenda',{data,descricao:desc,criado_em:new Date().toISOString()});
+  toast('Pré-agenda incluída!');
   closeModal();
 };
 
@@ -886,51 +926,240 @@ window.gerarPDF=function(id){
   const L=ST.locador;
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4'});
-  const lm=20,rm=190,lw=170;let y=20;
-  const ln=(n=5)=>{y+=n;};
-  const hd=(t,sz=13)=>{doc.setFontSize(sz);doc.setFont('helvetica','bold');doc.text(t,105,y,{align:'center'});ln(sz*.45);};
-  const par=(t,sz=10,bold=false)=>{doc.setFontSize(sz);doc.setFont('helvetica',bold?'bold':'normal');const ls=doc.splitTextToSize(t,lw);ls.forEach(l=>{if(y>272){doc.addPage();y=20;}doc.text(l,lm,y);y+=sz*.42;});ln(2);};
-  const hr=()=>{doc.setDrawColor(180);doc.line(lm,y,rm,y);ln(4);};
-  const clNome=cl?cl.nome:'_______________',clCpf=cl?cl.cpf||cl.cnpj:'_______________',clEnd=cl?cl.endereco:'_______________';
-  hd('CONTRATO DE LOCAÇÃO DE SALÃO DE FESTAS PARA EVENTO');ln(3);hr();
-  par('Pelo presente instrumento particular, de um lado:');
-  par(`LOCADOR: ${L.nome||'___'}, ${L.estado_civil||'___'}, ${L.profissao||'___'}, RG nº ${L.rg||'___'} ${L.orgao_rg||''}, CPF nº ${L.cpf||'___'}, residente na ${L.endereco||'___'}, CEP ${L.cep||'___'};`);
-  par(`LOCATÁRIO(A): ${clNome}, CPF/CNPJ nº ${clCpf}, residente em ${clEnd}.`);
+  const lm=25,rm=185,lw=160;
+  let y=20;
+
+  // ── helpers ──
+  const newPageIfNeeded=(needed=10)=>{ if(y+needed>278){doc.addPage();y=20;} };
+  const ln=(n=5)=>{ y+=n; };
+
+  const titulo=(txt)=>{
+    doc.setFontSize(12);doc.setFont('times','bold');
+    const lines=doc.splitTextToSize(txt,lw);
+    lines.forEach(l=>{newPageIfNeeded();doc.text(l,105,y,{align:'center'});y+=6;});
+    ln(2);
+  };
+
+  const paragrafo=(txt,indent=0,sz=10.5,bold=false)=>{
+    doc.setFontSize(sz);doc.setFont('times',bold?'bold':'normal');
+    const lines=doc.splitTextToSize(txt,lw-indent);
+    lines.forEach(l=>{newPageIfNeeded();doc.text(l,lm+indent,y);y+=sz*0.42;});
+    ln(3);
+  };
+
+  const clausula=(num,titulo_cl)=>{
+    newPageIfNeeded(12);
+    ln(2);
+    doc.setFontSize(10.5);doc.setFont('times','bold');
+    doc.text(`CLÁUSULA ${num} – ${titulo_cl}`,lm,y);
+    ln(6);
+  };
+
+  const item=(txt,sz=10.5)=>{
+    doc.setFontSize(sz);doc.setFont('times','normal');
+    const lines=doc.splitTextToSize(txt,lw-4);
+    lines.forEach(l=>{newPageIfNeeded();doc.text(l,lm+4,y);y+=sz*0.42;});
+    ln(3);
+  };
+
+  const hr=()=>{ newPageIfNeeded(6);doc.setDrawColor(120);doc.setLineWidth(0.3);doc.line(lm,y,rm,y);ln(5); };
+
+  const clNome = cl?cl.nome:'_______________________________________________';
+  const clCpf  = cl?cl.cpf||cl.cnpj:'_________________________';
+  const clEnd  = cl?cl.endereco:'______________________________________________';
+  const clNasc = cl&&cl.nascimento?new Date(cl.nascimento+'T12:00:00').toLocaleDateString('pt-BR'):'___/___/______';
+
+  // Determinar nacionalidade/estado civil do locatário (se tiver no cadastro, senão placeholder)
+  const de = c.data_evento?new Date(c.data_evento+'T12:00:00').toLocaleDateString('pt-BR'):'___/___/______';
+  const dSinal = c.data_sinal?new Date(c.data_sinal+'T12:00:00').toLocaleDateString('pt-BR'):'___/___/______';
+  const dRest  = c.data_restante?new Date(c.data_restante+'T12:00:00').toLocaleDateString('pt-BR'):'___/___/______';
+
+  // ══════════════════════════════════════════════
+  // CABEÇALHO
+  // ══════════════════════════════════════════════
+  titulo('CONTRATO DE LOCAÇÃO DE SALÃO DE FESTAS PARA EVENTO');
   hr();
-  par('CLÁUSULA PRIMEIRA – DO OBJETO DA LOCAÇÃO',10,true);
-  par(`1.1. O objeto é a locação do imóvel "${L.nome_salao||'___'}", na ${L.end_salao||'___'}, CEP ${L.cep_salao||'___'}.`);
-  par(`1.2. A locação inclui: ${L.desc_salao||'___'}`);
-  par('CLÁUSULA SEGUNDA – DA FINALIDADE E PRAZO',10,true);
-  const de=c.data_evento?new Date(c.data_evento+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-  par(`2.1. Finalidade: ${c.finalidade||'—'}, em ${de}.`);
-  par(`2.2. Início: ${c.horario_inicio||'—'} · Encerramento: ${c.horario_fim||'—'}.`);
-  par(`2.3. Convidados estimados: ${c.num_convidados||'—'} pessoas.`);
-  par('CLÁUSULA TERCEIRA – DO VALOR E PAGAMENTO',10,true);
-  par(`3.1. Valor total: R$ ${(c.valor||0).toLocaleString('pt-BR')}.`);
-  par(`3.2. Sinal: R$ ${(c.valor_sinal||0).toLocaleString('pt-BR')} no ato. Saldo: R$ ${(c.valor_restante||0).toLocaleString('pt-BR')} até ${c.data_restante?new Date(c.data_restante+'T12:00:00').toLocaleDateString('pt-BR'):'—'}.`);
-  par(`3.3. Atraso: multa 2% + juros 1% a.m. + IPCA.`);
+
+  // Qualificação das partes
+  paragrafo('Pelo presente instrumento particular de Contrato de Locação de Salão de Festas para Evento, de um lado:');
+  ln(1);
+  paragrafo(`LOCADOR: ${L.nome||'___'}, ${L.estado_civil||'___'}, ${L.profissao||'___'}, portador do RG nº ${L.rg||'___'} ${L.orgao_rg||''} e CPF nº ${L.cpf||'___'}, residente e domiciliado na ${L.endereco||'___'}, CEP ${L.cep||'___'};`,0,10.5,true);
+  ln(1);
+  paragrafo('E de outro lado:');
+  ln(1);
+  paragrafo(`LOCATÁRIO(A): ${clNome}, CPF/CNPJ nº ${clCpf}, residente e domiciliado(a) na ${clEnd};`,0,10.5,true);
+  ln(2);
+  paragrafo('Têm entre si, justo e contratado, o presente Contrato de Locação de Salão de Festas para Evento, mediante as cláusulas e condições seguintes:');
+  hr();
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA 1 – OBJETO
+  // ══════════════════════════════════════════════
+  clausula('PRIMEIRA','DO OBJETO DA LOCAÇÃO');
+  item(`1.1. O presente contrato tem como objeto a locação do imóvel comercial destinado a eventos, denominado "${L.nome_salao||'___'}", localizado na ${L.end_salao||'___'}, CEP ${L.cep_salao||'___'}, doravante denominado simplesmente "IMÓVEL".`);
+  item(`1.2. A locação inclui o uso do(a): ${L.desc_salao||'___'}`);
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA 2 – FINALIDADE E PRAZO
+  // ══════════════════════════════════════════════
+  clausula('SEGUNDA','DA FINALIDADE E PRAZO DA LOCAÇÃO');
+  item(`2.1. A locação destina-se exclusivamente à realização de ${c.finalidade||'___'}, a ser realizada na data de ${de}.`);
+  item(`2.2. O período de locação terá início às ${c.horario_inicio||'___'} do dia ${de} para montagem e preparação do evento, e se encerrará impreterivelmente às ${c.horario_fim||'___'} para desmontagem e desocupação total do IMÓVEL.`);
+  item(`2.3. O número estimado de convidados para o evento é de ${c.num_convidados||'___'} (${numPorExtenso(c.num_convidados||0)}) pessoas. O LOCATÁRIO se compromete a não exceder a capacidade máxima de pessoas permitida pelo IMÓVEL, conforme alvará de funcionamento, sob pena de multa e rescisão contratual.`);
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA 3 – VALOR E PAGAMENTO
+  // ══════════════════════════════════════════════
+  clausula('TERCEIRA','DO VALOR DA LOCAÇÃO E FORMA DE PAGAMENTO');
+  item(`3.1. O valor total da locação do IMÓVEL para o período e finalidade estabelecidos na Cláusula Segunda é de R$ ${(c.valor||0).toLocaleString('pt-BR')} (${valorPorExtenso(c.valor||0)}).`);
+  item(`3.2. O pagamento será efetuado da seguinte forma:`);
+  item(`a) R$ ${(c.valor_sinal||0).toLocaleString('pt-BR')} (${valorPorExtenso(c.valor_sinal||0)}) no ato da assinatura do presente contrato, a título de sinal e princípio de pagamento (data prevista: ${dSinal});`);
+  item(`b) O saldo remanescente de R$ ${(c.valor_restante||0).toLocaleString('pt-BR')} (${valorPorExtenso(c.valor_restante||0)}) deverá ser pago até ${dRest}.`);
+  item(`3.3. Em caso de atraso no pagamento do saldo remanescente, incidirá multa de 2% (dois por cento) sobre o valor devido, acrescido de juros de mora de 1% (um por cento) ao mês e correção monetária pelo IPCA, sem prejuízo da rescisão do contrato e retenção do valor já pago.`);
+
+  // Dados de pagamento
   let dadosPgto=[];
-  if(L.chave_pix)dadosPgto.push(`PIX (${L.tipo_pix||''}): ${L.chave_pix}`);
-  if(L.banco)dadosPgto.push(`Banco: ${L.banco} | Ag: ${L.agencia||'—'} | Conta ${L.tipo_conta||''}: ${L.conta||'—'}`);
-  if(dadosPgto.length)par(`3.4. Dados para pagamento: ${dadosPgto.join(' | ')}`);
-  let n=4;
-  const rom=['PRIMEIRA','SEGUNDA','TERCEIRA','QUARTA','QUINTA','SEXTA','SÉTIMA','OITAVA','NONA','DÉCIMA'];
-  if(c.usar_limpeza){par(`CLÁUSULA ${rom[n-1]} – DA TAXA DE LIMPEZA`,10,true);par(`${n}.1. Taxa de limpeza: R$ ${(c.taxa_limpeza||0).toLocaleString('pt-BR')}, paga com o saldo.`);par(`${n}.2. Sujeira excessiva será cobrada adicionalmente.`);n++;}
-  if(c.usar_caucao){par(`CLÁUSULA ${rom[n-1]} – DO CAUÇÃO`,10,true);par(`${n}.1. Caução: R$ ${(c.caucao||0).toLocaleString('pt-BR')}, depositado no ato.`);par(`${n}.2. Devolvido em até 5 dias úteis após vistoria sem danos.`);n++;}
-  par(`CLÁUSULA ${rom[n-1]} – DO RUÍDO`,10,true);par(`${n}.1. O LOCATÁRIO cumprirá a ${L.lei_ruido||'legislação municipal'}.`);par(`${n}.2. Volume moderado a partir das ${L.hora_ruido||'23:00'}. Multas são de responsabilidade do LOCATÁRIO.`);n++;
-  par(`CLÁUSULA ${rom[n-1]} – DAS RESPONSABILIDADES`,10,true);par(`${n}.1. O LOCATÁRIO responde por danos materiais e pessoais ocorridos durante a locação.`);par(`${n}.2. Sublocação vedada sem autorização expressa.`);n++;
-  par(`CLÁUSULA ${rom[n-1]} – DA RESCISÃO`,10,true);par(`${n}.1. Culpa do LOCATÁRIO: retenção do sinal. Culpa do LOCADOR: devolução em dobro.`);n++;
-  par(`CLÁUSULA ${rom[n-1]} – DO FORO`,10,true);par(`${n}.1. Foro da Comarca de ${L.foro||'___'}.`);
-  hr();par(`Uberlândia/MG, ${new Date().toLocaleDateString('pt-BR')}.`);ln(8);
-  doc.setFontSize(10);
-  doc.text('______________________________',lm,y);doc.text('______________________________',105,y);ln(5);
-  doc.text(`LOCADOR: ${L.nome||'___'}`,lm,y);doc.text(`LOCATÁRIO: ${clNome}`,105,y);ln(5);
-  doc.text(`CPF: ${L.cpf||'___'}`,lm,y);doc.text(`CPF: ${clCpf}`,105,y);ln(12);
-  doc.text('Testemunha 1: _________________________ CPF: _______________',lm,y);ln(8);
-  doc.text('Testemunha 2: _________________________ CPF: _______________',lm,y);ln(10);
-  par('Nota: Recomenda-se revisão por advogado para plena validade jurídica.',9);
-  doc.save(`Contrato_${c.num||id.slice(-4)}_${clNome.replace(/\s/g,'_')}.pdf`);
+  if(L.chave_pix) dadosPgto.push(`PIX (${L.tipo_pix||'chave'}): ${L.chave_pix}`);
+  if(L.banco)     dadosPgto.push(`Banco: ${L.banco}${L.agencia?' | Agência: '+L.agencia:''}${L.conta?' | Conta '+L.tipo_conta+': '+L.conta:''}`);
+  if(dadosPgto.length) item(`3.4. Dados para pagamento: ${dadosPgto.join(' — ')}`);
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULAS OPCIONAIS
+  // ══════════════════════════════════════════════
+  let numCl=4;
+  const rom=['PRIMEIRA','SEGUNDA','TERCEIRA','QUARTA','QUINTA','SEXTA','SÉTIMA','OITAVA','NONA','DÉCIMA','DÉCIMA PRIMEIRA','DÉCIMA SEGUNDA'];
+
+  if(c.usar_limpeza){
+    clausula(rom[numCl-1],'DA TAXA DE LIMPEZA');
+    item(`${numCl}.1. Além do valor da locação, o LOCATÁRIO pagará uma taxa de limpeza no valor de R$ ${(c.taxa_limpeza||0).toLocaleString('pt-BR')} (${valorPorExtenso(c.taxa_limpeza||0)}), a ser paga juntamente com o saldo remanescente da locação, conforme item 3.2 "b".`);
+    item(`${numCl}.2. Esta taxa cobre a limpeza básica do IMÓVEL após o evento. Caso o IMÓVEL seja entregue em estado de sujeira excessiva ou com danos que exijam limpeza especializada, o LOCATÁRIO arcará com os custos adicionais, que serão descontados do valor do caução ou cobrados à parte, se o valor do caução for insuficiente.`);
+    numCl++;
+  }
+
+  if(c.usar_caucao){
+    clausula(rom[numCl-1],'DO CAUÇÃO/GARANTIA');
+    item(`${numCl}.1. A título de garantia para cobrir eventuais danos ao IMÓVEL, seus equipamentos e mobiliários, bem como para cobrir despesas adicionais de limpeza ou multas, o LOCATÁRIO depositará a quantia de R$ ${(c.caucao||0).toLocaleString('pt-BR')} (${valorPorExtenso(c.caucao||0)}), no ato da assinatura do presente contrato.`);
+    item(`${numCl}.2. O valor do caução será restituído ao LOCATÁRIO em até 5 (cinco) dias úteis após o término da locação e vistoria do IMÓVEL pelo LOCADOR, desde que não haja danos, avarias ou pendências financeiras.`);
+    item(`${numCl}.3. Caso sejam constatados danos ou avarias que excedam o valor do caução, o LOCATÁRIO se compromete a ressarcir o LOCADOR pela diferença, no prazo de 5 (cinco) dias úteis após a notificação.`);
+    numCl++;
+  }
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA RUÍDO
+  // ══════════════════════════════════════════════
+  clausula(rom[numCl-1],'DO NÍVEL DE RUÍDO E POLUIÇÃO SONORA');
+  item(`${numCl}.1. O LOCATÁRIO se compromete a zelar pelo sossego e bem-estar da vizinhança, responsabilizando-se integralmente pela observância das normas relativas à emissão de ruídos e poluição sonora durante todo o período de locação do imóvel.`);
+  item(`${numCl}.2. O LOCATÁRIO declara-se ciente e concorda em cumprir rigorosamente as disposições da ${L.lei_ruido||'legislação municipal de controle de poluição sonora'}, bem como quaisquer outras normas municipais, estaduais ou federais aplicáveis à matéria.`);
+  item(`${numCl}.3. Fica expressamente estabelecido que o volume do som e das atividades musicais deverá ser moderado a partir das ${L.hora_ruido||'23h00'}, respeitando os limites de decibéis estabelecidos pela legislação municipal para o período noturno.`);
+  item(`${numCl}.4. Qualquer multa, autuação, penalidade ou sanção imposta pelas autoridades competentes em decorrência do descumprimento das normas de ruído durante o evento será de inteira e exclusiva responsabilidade do LOCATÁRIO.`);
+  item(`${numCl}.5. O LOCATÁRIO deverá orientar seus convidados, prestadores de serviço (DJs, bandas, etc.) e demais envolvidos sobre a necessidade de cumprimento das regras de ruído, sendo o único responsável por sua fiscalização.`);
+  numCl++;
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA RESPONSABILIDADES
+  // ══════════════════════════════════════════════
+  clausula(rom[numCl-1],'DAS RESPONSABILIDADES DO LOCATÁRIO');
+  item(`${numCl}.1. O LOCATÁRIO se responsabiliza pela conservação do IMÓVEL e de todos os bens nele contidos durante o período de locação, devendo restituí-lo nas mesmas condições em que o recebeu, ressalvado o desgaste natural pelo uso.`);
+  item(`${numCl}.2. O LOCATÁRIO será o único responsável por quaisquer danos materiais ou pessoais causados ao IMÓVEL, aos bens nele existentes, a terceiros (convidados, prestadores de serviço, vizinhos) ou a si próprio, decorrentes do uso indevido, negligência ou imperícia, durante o período de locação.`);
+  item(`${numCl}.3. É vedado ao LOCATÁRIO sublocar, ceder ou emprestar o IMÓVEL a terceiros, total ou parcialmente, sem a prévia e expressa autorização do LOCADOR.`);
+  item(`${numCl}.4. O LOCATÁRIO deverá providenciar, por sua conta e risco, toda a documentação e licenças necessárias para a realização do evento, caso exigidas pelas autoridades competentes, isentando o LOCADOR de qualquer responsabilidade.`);
+  item(`${numCl}.5. É de responsabilidade do LOCATÁRIO a retirada de todo o lixo e detritos gerados pelo evento, devidamente acondicionados, antes da devolução das chaves.`);
+  numCl++;
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA ENTREGA DE CHAVES
+  // ══════════════════════════════════════════════
+  clausula(rom[numCl-1],'DA ENTREGA E DEVOLUÇÃO DAS CHAVES');
+  item(`${numCl}.1. As chaves do IMÓVEL serão entregues ao LOCATÁRIO às ${c.horario_inicio||'___'} do dia ${de}, mediante termo de vistoria inicial, que deverá ser assinado por ambas as partes.`);
+  item(`${numCl}.2. As chaves do IMÓVEL deverão ser devolvidas ao LOCADOR impreterivelmente às ${c.horario_fim||'___'}, mediante termo de vistoria final, que deverá ser assinado por ambas as partes.`);
+  item(`${numCl}.3. A não devolução das chaves no horário estipulado implicará na cobrança de multa diária de R$ 500,00 (quinhentos reais), sem prejuízo de outras medidas legais cabíveis.`);
+  numCl++;
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA RESCISÃO
+  // ══════════════════════════════════════════════
+  clausula(rom[numCl-1],'DA RESCISÃO E MULTA');
+  item(`${numCl}.1. O presente contrato poderá ser rescindido de pleno direito em caso de descumprimento de qualquer uma das cláusulas e condições aqui estabelecidas.`);
+  item(`${numCl}.2. Em caso de rescisão por iniciativa do LOCATÁRIO, ou por sua culpa, o valor pago a título de sinal será retido pelo LOCADOR como multa compensatória, sem prejuízo da cobrança de eventuais danos causados.`);
+  item(`${numCl}.3. Em caso de rescisão por iniciativa do LOCADOR, ou por sua culpa, o LOCADOR deverá restituir ao LOCATÁRIO o valor pago a título de sinal em dobro, sem prejuízo de outras indenizações cabíveis.`);
+  numCl++;
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA FORO
+  // ══════════════════════════════════════════════
+  clausula(rom[numCl-1],'DO FORO');
+  item(`${numCl}.1. As partes elegem o foro da Comarca de ${L.foro||'___'} para dirimir quaisquer dúvidas ou litígios decorrentes do presente contrato, renunciando a qualquer outro, por mais privilegiado que seja.`);
+
+  // ══════════════════════════════════════════════
+  // ASSINATURAS
+  // ══════════════════════════════════════════════
+  hr();
+  const cidade=L.foro?L.foro.split(',')[0]:'Uberlândia/MG';
+  paragrafo(`E, por estarem assim justos e contratados, as partes assinam o presente em 2 (duas) vias de igual teor e forma, na presença das 2 (duas) testemunhas abaixo, para que produza seus jurídicos e legais efeitos.`);
+  ln(2);
+  paragrafo(`${cidade}, ${new Date().toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'})}.`);
+  ln(14);
+
+  doc.setFontSize(10);doc.setFont('times','normal');
+  // Locador
+  doc.line(lm,y,lm+70,y);
+  doc.line(105,y,105+70,y);
+  ln(5);
+  doc.setFont('times','bold');
+  doc.text('LOCADOR:',lm,y);
+  doc.text('LOCATÁRIO(A):',105,y);
+  ln(5);
+  doc.setFont('times','normal');
+  doc.text(L.nome||'___',lm,y);
+  doc.text(clNome,105,y);
+  ln(5);
+  doc.text(`CPF: ${L.cpf||'___'}`,lm,y);
+  doc.text(`CPF/CNPJ: ${clCpf}`,105,y);
+  ln(16);
+
+  // Testemunhas
+  doc.setFont('times','bold');
+  doc.text('TESTEMUNHAS:',lm,y);ln(8);
+  doc.setFont('times','normal');
+  doc.line(lm,y,lm+70,y);
+  doc.line(105,y,105+70,y);
+  ln(5);
+  doc.text('Nome:',lm,y);doc.text('Nome:',105,y);ln(5);
+  doc.text('CPF:',lm,y);doc.text('CPF:',105,y);ln(14);
+  doc.line(lm,y,lm+70,y);
+  doc.line(105,y,105+70,y);
+  ln(5);
+  doc.text('Nome:',lm,y);doc.text('Nome:',105,y);ln(5);
+  doc.text('CPF:',lm,y);doc.text('CPF:',105,y);
+  ln(10);
+
+  hr();
+  doc.setFontSize(8);doc.setFont('times','italic');
+  doc.text('Nota de Isenção: Este documento é de caráter informativo. Recomenda-se que este contrato seja revisado por um advogado de sua confiança para adequação a quaisquer particularidades e para garantir a plena validade e eficácia jurídica.',lm,y,{maxWidth:lw});
+
+  doc.save(`Contrato_${c.num||id.slice(-4)}_${clNome.replace(/\s+/g,'_')}.pdf`);
 };
+
+// ── auxiliares do PDF ──
+function numPorExtenso(n){
+  const u=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+  const d=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+  const c2=['','cem','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+  if(!n||n===0)return'zero';
+  if(n<20)return u[n];
+  if(n<100)return d[Math.floor(n/10)]+(n%10?' e '+u[n%10]:'');
+  if(n===100)return'cem';
+  if(n<1000)return c2[Math.floor(n/100)]+(n%100?' e '+numPorExtenso(n%100):'');
+  return n.toString();
+}
+function valorPorExtenso(v){
+  if(!v)return'zero reais';
+  const int=Math.floor(v);
+  const cent=Math.round((v-int)*100);
+  let s=numPorExtenso(int)+(int===1?' real':' reais');
+  if(cent>0)s+=' e '+numPorExtenso(cent)+(cent===1?' centavo':' centavos');
+  return s;
+}
 
 // ──────────────────────────────────────────────────────────
 // UTILS
