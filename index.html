@@ -292,9 +292,9 @@ import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateD
     measurementId: "G-032GT4SD1K"
   };
 
-
 const fbApp = initializeApp(firebaseConfig);
 const db    = getFirestore(fbApp);
+
 // ──────────────────────────────────────────────────────────
 // ESTADO GLOBAL
 // ──────────────────────────────────────────────────────────
@@ -783,6 +783,7 @@ window.openModal=function(type,id=null){
       <div class="fi"><label>Data Sinal</label><input type="date" id="ct-dsinal" value="${r?.data_sinal||''}"></div>
       <div class="fi"><label>Valor Restante (R$)</label><input type="number" id="ct-rest" value="${r?.valor_restante||''}"></div>
       <div class="fi"><label>Data Restante</label><input type="date" id="ct-drest" value="${r?.data_restante||''}"></div>
+      <div class="fi"><label>Data de Entrega das Chaves</label><input type="date" id="ct-dchaves" value="${r?.data_chaves||''}"></div>
       <div class="sdiv">Cláusulas Opcionais</div>
       <div class="ibox ff"><i class="ti ti-info-circle" style="margin-right:4px"></i>Marque para incluir a cláusula no PDF e gerar lançamento financeiro.</div>
       <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -871,7 +872,7 @@ window.saveContrato=async function(id){
   const cid=gv('ct-cl');if(!cid){alert('Selecione o cliente');return;}
   const data=gv('ct-data');if(!data){alert('Informe a data');return;}
   const uL=gb('ct-ul'),uC=gb('ct-uc');
-  const obj={cliente_id:cid,data_evento:data,horario_inicio:gv('ct-ini'),horario_fim:gv('ct-fim'),finalidade:gv('ct-final'),num_convidados:parseInt(gv('ct-conv'))||0,valor:parseFloat(gv('ct-val'))||0,valor_sinal:parseFloat(gv('ct-sinal'))||0,data_sinal:gv('ct-dsinal'),valor_restante:parseFloat(gv('ct-rest'))||0,data_restante:gv('ct-drest'),taxa_limpeza:parseFloat(gv('ct-limp'))||250,usar_limpeza:uL,caucao:parseFloat(gv('ct-cauc'))||500,usar_caucao:uC,status:gv('ct-st'),observacoes:gv('ct-obs'),num:ST.contratos.length+1};
+  const obj={cliente_id:cid,data_evento:data,horario_inicio:gv('ct-ini'),horario_fim:gv('ct-fim'),finalidade:gv('ct-final'),num_convidados:parseInt(gv('ct-conv'))||0,valor:parseFloat(gv('ct-val'))||0,valor_sinal:parseFloat(gv('ct-sinal'))||0,data_sinal:gv('ct-dsinal'),valor_restante:parseFloat(gv('ct-rest'))||0,data_restante:gv('ct-drest'),data_chaves:gv('ct-dchaves'),taxa_limpeza:parseFloat(gv('ct-limp'))||250,usar_limpeza:uL,caucao:parseFloat(gv('ct-cauc'))||500,usar_caucao:uC,status:gv('ct-st'),observacoes:gv('ct-obs'),num:ST.contratos.length+1};
   const clNome=ST.clientes.find(x=>x.id===cid)?.nome||'';
   if(id){await DB.upd('contratos',id,obj);toast('Contrato atualizado!');}
   else{
@@ -1070,8 +1071,9 @@ window.gerarPDF=function(id){
   // ══════════════════════════════════════════════
   // CLÁUSULA ENTREGA DE CHAVES
   // ══════════════════════════════════════════════
+  const dChaves = c.data_chaves?new Date(c.data_chaves+'T12:00:00').toLocaleDateString('pt-BR'):de;
   clausula(rom[numCl-1],'DA ENTREGA E DEVOLUÇÃO DAS CHAVES');
-  item(`${numCl}.1. As chaves do IMÓVEL serão entregues ao LOCATÁRIO às ${c.horario_inicio||'___'} do dia ${de}, mediante termo de vistoria inicial, que deverá ser assinado por ambas as partes.`);
+  item(`${numCl}.1. As chaves do IMÓVEL serão entregues ao LOCATÁRIO às ${c.horario_inicio||'___'} do dia ${dChaves}, mediante termo de vistoria inicial, que deverá ser assinado por ambas as partes.`);
   item(`${numCl}.2. As chaves do IMÓVEL deverão ser devolvidas ao LOCADOR impreterivelmente às ${c.horario_fim||'___'}, mediante termo de vistoria final, que deverá ser assinado por ambas as partes.`);
   item(`${numCl}.3. A não devolução das chaves no horário estipulado implicará na cobrança de multa diária de R$ 500,00 (quinhentos reais), sem prejuízo de outras medidas legais cabíveis.`);
   numCl++;
@@ -1090,6 +1092,15 @@ window.gerarPDF=function(id){
   // ══════════════════════════════════════════════
   clausula(rom[numCl-1],'DO FORO');
   item(`${numCl}.1. As partes elegem o foro da Comarca de ${L.foro||'___'} para dirimir quaisquer dúvidas ou litígios decorrentes do presente contrato, renunciando a qualquer outro, por mais privilegiado que seja.`);
+  numCl++;
+
+  // ══════════════════════════════════════════════
+  // OBSERVAÇÕES (se houver)
+  // ══════════════════════════════════════════════
+  if(c.observacoes&&c.observacoes.trim()){
+    clausula(rom[numCl-1],'DAS OBSERVAÇÕES GERAIS');
+    item(`${numCl}.1. ${c.observacoes.trim()}`);
+  }
 
   // ══════════════════════════════════════════════
   // ASSINATURAS
@@ -1133,10 +1144,6 @@ window.gerarPDF=function(id){
   doc.text('Nome:',lm,y);doc.text('Nome:',105,y);ln(5);
   doc.text('CPF:',lm,y);doc.text('CPF:',105,y);
   ln(10);
-
-  hr();
-  doc.setFontSize(8);doc.setFont('times','italic');
-  doc.text('Nota de Isenção: Este documento é de caráter informativo. Recomenda-se que este contrato seja revisado por um advogado de sua confiança para adequação a quaisquer particularidades e para garantir a plena validade e eficácia jurídica.',lm,y,{maxWidth:lw});
 
   doc.save(`Contrato_${c.num||id.slice(-4)}_${clNome.replace(/\s+/g,'_')}.pdf`);
 };
