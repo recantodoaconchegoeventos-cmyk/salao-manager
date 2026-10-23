@@ -282,15 +282,14 @@ import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateD
 // ╔══════════════════════════════════════════════════════════╗
 // ║  ⚠️  SUBSTITUA PELOS SEUS DADOS DO FIREBASE  ⚠️          ║
 // ╚══════════════════════════════════════════════════════════╝
- const firebaseConfig = {
-    apiKey: "AIzaSyARy1VerzcXdUJCBzHQA8DrJmK6vdqF5Io",
-    authDomain: "recanto-do-aconchego-eventos.firebaseapp.com",
-    projectId: "recanto-do-aconchego-eventos",
-    storageBucket: "recanto-do-aconchego-eventos.firebasestorage.app",
-    messagingSenderId: "567805314565",
-    appId: "1:567805314565:web:1a06a2ec659751d7e1be6c",
-    measurementId: "G-032GT4SD1K"
-  };
+const firebaseConfig = {
+  apiKey:            "COLE_SUA_API_KEY_AQUI",
+  authDomain:        "COLE_SEU_AUTH_DOMAIN_AQUI",
+  projectId:         "COLE_SEU_PROJECT_ID_AQUI",
+  storageBucket:     "COLE_SEU_STORAGE_BUCKET_AQUI",
+  messagingSenderId: "COLE_SEU_MESSAGING_SENDER_ID_AQUI",
+  appId:             "COLE_SEU_APP_ID_AQUI"
+};
 
 const fbApp = initializeApp(firebaseConfig);
 const db    = getFirestore(fbApp);
@@ -621,20 +620,44 @@ window.calMv=function(dir){ST.calDate=new Date(ST.calDate.getFullYear(),ST.calDa
 window.calClick=function(date){
   const evts=ST.eventos.filter(ev=>{const c=ST.contratos.find(x=>x.id===ev.contrato_id);return c&&c.data_evento===date;});
   const preEvts=(ST.pre_agenda||[]).filter(p=>p.data===date);
-  let msg='';
+  if(!evts.length&&!preEvts.length) return;
+  const dateLabel=new Date(date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  let html=`<h3 style="margin:0 0 12px;font-size:15px;color:var(--text)">📆 ${dateLabel}</h3>`;
   if(evts.length){
     evts.forEach(ev=>{
       const c=ST.contratos.find(x=>x.id===ev.contrato_id);
       const cl=ST.clientes.find(x=>x.id===(c?c.cliente_id:''));
-      msg+=`📅 EVENTO\nCliente: ${cl?cl.nome:'—'}\nFinalidade: ${c?c.finalidade:'—'}\nStatus: ${ev.status}\nHorário: ${c?c.horario_inicio+' às '+c.horario_fim:'—'}\nConvidados: ${c?c.num_convidados:0}\n\n`;
+      html+=`<div style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:4px solid #4caf50">
+        <div style="font-weight:600;margin-bottom:4px">📅 ${cl?cl.nome:'—'}</div>
+        <div style="font-size:13px;color:var(--muted)">Finalidade: ${c?c.finalidade:'—'}<br>Horário: ${c?c.horario_inicio+' às '+c.horario_fim:'—'} · Convidados: ${c?c.num_convidados:0}<br>Status: ${ev.status}</div>
+      </div>`;
     });
   }
   if(preEvts.length){
     preEvts.forEach(p=>{
-      msg+=`📋 PRÉ-AGENDA\n${p.descricao}\n(ID: ${p.id})\n\n`;
+      html+=`<div style="background:#fff5f5;border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:4px solid #e57373;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600;margin-bottom:2px;color:#8b1a1a">📋 Pré-Agenda</div>
+          <div style="font-size:13px;color:#a94442">${p.descricao}</div>
+        </div>
+        <button onclick="delPreAgenda('${p.id}')" style="background:#e57373;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;margin-left:10px" title="Excluir pré-agenda">🗑 Excluir</button>
+      </div>`;
     });
   }
-  if(msg) alert(msg.trim());
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML=`<div style="background:var(--surface);border-radius:12px;padding:20px;min-width:320px;max-width:460px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+    ${html}
+    <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;margin-top:8px;padding:8px;background:var(--bg2);border:none;border-radius:8px;cursor:pointer;color:var(--text);font-size:14px">Fechar</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+};
+window.delPreAgenda=async function(id){
+  if(!confirm('Excluir esta pré-agenda?')) return;
+  await DB.del('pre_agenda',id);
+  toast('Pré-agenda excluída!');
+  document.querySelector('[style*="position:fixed"]')?.remove();
 };
 
 // ──────────────────────────────────────────────────────────
@@ -1066,6 +1089,15 @@ window.gerarPDF=function(id){
   item(`${numCl}.3. É vedado ao LOCATÁRIO sublocar, ceder ou emprestar o IMÓVEL a terceiros, total ou parcialmente, sem a prévia e expressa autorização do LOCADOR.`);
   item(`${numCl}.4. O LOCATÁRIO deverá providenciar, por sua conta e risco, toda a documentação e licenças necessárias para a realização do evento, caso exigidas pelas autoridades competentes, isentando o LOCADOR de qualquer responsabilidade.`);
   item(`${numCl}.5. É de responsabilidade do LOCATÁRIO a retirada de todo o lixo e detritos gerados pelo evento, devidamente acondicionados, antes da devolução das chaves.`);
+  numCl++;
+
+  // ══════════════════════════════════════════════
+  // CLÁUSULA VEDAÇÃO DE SUBLOCAÇÃO E VENDA DE INGRESSOS
+  // ══════════════════════════════════════════════
+  clausula(rom[numCl-1],'DA VEDAÇÃO DE REALOCAÇÃO DO ESPAÇO E VENDA DE INGRESSOS');
+  item(`${numCl}.1. É expressamente vedado ao LOCATÁRIO realocar, transferir ou deslocar o evento para outro local ou espaço diverso do IMÓVEL objeto deste contrato, sob qualquer pretexto ou justificativa, sem a prévia e expressa autorização por escrito do LOCADOR.`);
+  item(`${numCl}.2. Fica terminantemente proibido ao LOCATÁRIO realizar, autorizar ou permitir a venda de ingressos, bilheteria, cobrança de entrada, taxa de participação ou qualquer outra forma de cobrança ao público ou convidados para acesso ao evento realizado no IMÓVEL, salvo mediante autorização prévia e expressa do LOCADOR.`);
+  item(`${numCl}.3. O descumprimento de quaisquer das vedações previstas nesta cláusula ensejará a rescisão imediata do presente contrato, sem prejuízo da retenção integral dos valores pagos a título de sinal e caução, bem como da responsabilidade do LOCATÁRIO por eventuais danos causados ao LOCADOR, ao IMÓVEL e a terceiros.`);
   numCl++;
 
   // ══════════════════════════════════════════════
